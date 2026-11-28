@@ -18,24 +18,16 @@ pub(super) fn validate_schema_header(
     owner: &str,
     name: &str,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    if owner.starts_with('.') || owner.ends_with('.') || owner.contains("..") {
+    if !worth_foundational::is_valid_role_identifier(owner) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier);
     }
-    for segment in owner.split('.') {
-        validate_simple_identifier(segment)?;
-    }
-    validate_simple_identifier(name)?;
-    Ok(())
+    validate_simple_identifier(name)
 }
 
 pub(super) fn validate_simple_identifier(
     value: &str,
 ) -> Result<(), ApplicationSchemaDeclarationDenial> {
-    if value.is_empty()
-        || value.trim() != value
-        || value.chars().any(char::is_whitespace)
-        || value.contains('.')
-    {
+    if !worth_foundational::is_valid_simple_identifier(value) {
         return Err(ApplicationSchemaDeclarationDenial::InvalidIdentifier);
     }
     Ok(())

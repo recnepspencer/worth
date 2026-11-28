@@ -1,20 +1,21 @@
-//! Tag47 has an explicit version and endpoint namespaces; tag41 stays exact.
+//! One versioned wire grammar for symbolic expressions and their endpoint namespaces.
 use super::*;
+use crate::record::sequence::{decode_sequence, write_sequence};
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
-use worth_query_declaration::facade::application_schema::ApplicationGraphMemberMeaning as Domain;
+use worth_query_declaration::facade::application_schema::{
+    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode as Node,
+    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceKind as SourceKind,
+    ApplicationGraphMemberMeaning as Domain, ErasedApplicationDerivedRelationDefinition,
+    WorthQueryPortableDerivedRelationParts,
+};
+
+const EXPRESSION_WIRE_VERSION: u16 = 3;
 
 pub(super) fn write(
     output: &mut dyn BinaryEncodingSink,
     definition: &ErasedApplicationDerivedRelationDefinition,
 ) -> Result<(), Denial> {
-    if definition.is_legacy_shape() {
-        return Err(Denial::new(Kind::InvalidRecordShape));
-    }
-    output.u16(if uses_ordered_events(definition) {
-        2
-    } else {
-        1
-    })?;
+    output.u16(EXPRESSION_WIRE_VERSION)?;
     let parts = definition.parts();
     output.text(&parts.relation)?;
     write_member_domain(output, &parts.from)?;
@@ -29,13 +30,13 @@ pub(super) fn decode(
 ) -> Result<Member, Denial> {
     budget.require_nesting_depth(2)?;
     let version = input.u16()?;
-    if !matches!(version, 1 | 2) {
+    if version != EXPRESSION_WIRE_VERSION {
         return Err(Denial::new(Kind::UnsupportedRecordVariant));
     }
     let relation = input.text()?.to_owned();
     let from = decode_member_domain(input)?;
     let to = decode_member_domain(input)?;
-    let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input, version))?;
+    let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input))?;
     let laws = super::decode_laws(input, budget)?;
     let definition = ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
         ARCHIVE_DECODE,
@@ -47,9 +48,6 @@ pub(super) fn decode(
             laws,
         },
     );
-    if definition.is_legacy_shape() || uses_ordered_events(&definition) != (version == 2) {
-        return Err(Denial::new(Kind::InvalidRecordShape));
-    }
     let member = Member::DerivedRelation { definition };
     super::require_shape(&member)?;
     Ok(member)
@@ -118,10 +116,22 @@ fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), De
             }
             Ok(())
         }
-        _ => super::write_node(output, node),
+        Node::Compose { left, right } => {
+            output.u16(2)?;
+            output.u64(*left as u64)?;
+            output.u64(*right as u64)
+        }
+        Node::Reverse { input } | Node::WithoutSelfEdges { input } => {
+            output.u16(if matches!(node, Node::Reverse { .. }) {
+                3
+            } else {
+                4
+            })?;
+            output.u64(*input as u64)
+        }
     }
 }
-fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<Node, Denial> {
+fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
     Ok(match input.u16()? {
         1 => Node::Source(ApplicationDerivedRelationSource {
             kind: match input.u16()? {
@@ -156,20 +166,11 @@ fn decode_node(input: &mut BinaryInput<'_>, version: u16) -> Result<Node, Denial
             left: super::decode_index(input)?,
             right: super::decode_index(input)?,
         },
-        8 if version == 2 => Node::OrderedEvents {
+        8 => Node::OrderedEvents {
             predecessor: super::decode_index(input)?,
             introduced: super::decode_index(input)?,
             retired: super::decode_index(input)?,
         },
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     })
-}
-
-fn uses_ordered_events(definition: &ErasedApplicationDerivedRelationDefinition) -> bool {
-    definition
-        .parts()
-        .expression
-        .nodes
-        .iter()
-        .any(|node| matches!(node, Node::OrderedEvents { .. }))
 }

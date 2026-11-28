@@ -31,7 +31,10 @@
 #[cfg(test)]
 mod allocation_observation;
 
+mod aggregate_continuity_rule;
+mod aggregate_member_role;
 mod application_build_identity;
+mod aspect_exclusion_group_spec;
 mod aspects;
 mod boundary;
 mod boundary_artifacts;
@@ -42,29 +45,37 @@ mod budget_limits;
 mod canonicalization;
 pub mod canonicalization_api;
 mod compatibility;
+mod cross_context_policy;
 mod diagnostics;
+mod discriminator_scan;
 mod durability;
 mod durable_publication;
 mod execution;
 pub mod expression_api;
 mod expressions;
 pub mod facade;
+mod finite_canonical_f64;
 pub mod geometry_api;
+mod identifiers;
 mod identities;
+mod invariant_cost_class;
 mod locators;
 mod managed_access;
 mod managed_index_source;
 mod performance;
 pub mod performance_api;
+mod persistent_name_subject_kind;
 pub mod physical_integrity_observation;
 mod producer_publication_ownership;
 mod profiles;
 pub mod profiles_api;
+mod relation_cardinality;
 mod relations;
 mod resident_value;
 mod responsibilities;
 pub mod time;
 mod transitions;
+mod uniqueness_scope;
 mod value_shape;
 mod values;
 

@@ -1,6 +1,8 @@
+use worth_foundational::scan_name_discriminator_references;
+
 use super::birth_fixture::*;
 use super::{
-    recorded_name_references, AdmittedNameReferences, ApplicationNameDiscriminator,
+    AdmittedNameReferences, ApplicationNameDiscriminator,
     ApplicationNameDiscriminatorDecodeDenial as Denial, IndexedRoleDiscriminator,
     NameBirthDecodeDenial, OccurrencePath, RecordedNameBirth,
 };
@@ -8,7 +10,10 @@ use super::{
 #[test]
 fn every_closed_value_reads_back_exactly_as_encoded() {
     let (bytes, references) = every().canonical_bytes_with_references();
-    assert_eq!(recorded_name_references(&bytes), Ok(references.clone()));
+    assert_eq!(
+        scan_name_discriminator_references(&bytes),
+        Ok(references.clone())
+    );
     assert_eq!(references, vec![[1; 32], [2; 32]]);
     let recorded = birth("Authored", bytes, &[1, 2]);
     assert_eq!(recorded.decode_discriminator::<Every>(), Ok(Some(every())));

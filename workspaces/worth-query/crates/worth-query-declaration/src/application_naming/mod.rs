@@ -61,7 +61,6 @@ pub use denial::{
     ApplicationNameSchemeDenial,
 };
 pub(crate) use discriminator::discriminator_fits_structural_identity;
-pub(crate) use discriminator::recorded_name_references;
 #[doc(hidden)]
 pub use discriminator::{bound_max, bound_sum, field_bound, max_encoded_bytes, variant_bound};
 pub use discriminator::{
@@ -106,3 +105,7 @@ pub use scheme::{
 pub use selection::{NameCarrierSet, NameSelection, NameSelectionDenial, NameSideDiscriminator};
 pub use stored_name::StoredNameDenial;
 pub use stored_value::{NamedTargetDelegate, WorthQueryNameDelegate};
+
+pub use worth_foundational::{
+    scan_name_discriminator_references, DiscriminatorScanError, DiscriminatorScanErrorKind,
+};

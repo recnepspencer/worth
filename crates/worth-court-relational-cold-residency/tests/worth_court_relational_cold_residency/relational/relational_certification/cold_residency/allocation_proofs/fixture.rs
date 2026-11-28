@@ -192,7 +192,7 @@ pub fn build_multi_branch_checkpoint(
         seed_e[0],
         vec![vec![
             (seed_n[0], AggregateMemberRole::Anchor),
-            (seed_n[1], AggregateMemberRole::Ordinary),
+            (seed_n[1], AggregateMemberRole::Interior),
         ]],
     );
     let sample_name = seed_n[0];
@@ -261,7 +261,7 @@ pub fn build_multi_branch_checkpoint(
             };
             groups.push(vec![
                 (a, AggregateMemberRole::Anchor),
-                (m, AggregateMemberRole::Ordinary),
+                (m, AggregateMemberRole::Interior),
             ]);
         }
         publish_group(

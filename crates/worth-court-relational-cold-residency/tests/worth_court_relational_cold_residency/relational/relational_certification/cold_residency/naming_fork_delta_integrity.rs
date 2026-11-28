@@ -127,8 +127,8 @@ fn unchanged_fork_stays_isolated_from_post_fork_parent_advances_across_reopen_an
         "pre-grp",
         vec![vec![
             (pre_n[0], AggregateMemberRole::Anchor),
-            (pre_n[1], AggregateMemberRole::Ordinary),
-            (pre_n[2], AggregateMemberRole::Ordinary),
+            (pre_n[1], AggregateMemberRole::Interior),
+            (pre_n[2], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -151,7 +151,7 @@ fn unchanged_fork_stays_isolated_from_post_fork_parent_advances_across_reopen_an
         "post-grp",
         vec![vec![
             (pre_n[1], AggregateMemberRole::Anchor),
-            (post_n[0], AggregateMemberRole::Ordinary),
+            (post_n[0], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -188,7 +188,7 @@ fn unchanged_fork_stays_isolated_from_post_fork_parent_advances_across_reopen_an
         "post2-grp",
         vec![vec![
             (post2_n[0], AggregateMemberRole::Anchor),
-            (post2_n[1], AggregateMemberRole::Ordinary),
+            (post2_n[1], AggregateMemberRole::Interior),
         ]],
     );
     let (c2, src2) = capture_external_carrying(request, &r1, &src1);
@@ -225,7 +225,7 @@ fn multilevel_fork_chain_with_divergent_edits_and_retention_floors_matches_warm_
         "m-grp-0",
         vec![vec![
             (n0[0], AggregateMemberRole::Anchor),
-            (n0[1], AggregateMemberRole::Ordinary),
+            (n0[1], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -242,7 +242,7 @@ fn multilevel_fork_chain_with_divergent_edits_and_retention_floors_matches_warm_
         "c-grp",
         vec![vec![
             (nc[0], AggregateMemberRole::Anchor),
-            (nc[1], AggregateMemberRole::Ordinary),
+            (nc[1], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -262,7 +262,7 @@ fn multilevel_fork_chain_with_divergent_edits_and_retention_floors_matches_warm_
         "g-grp",
         vec![vec![
             (n0[0], AggregateMemberRole::Anchor),
-            (ng[0], AggregateMemberRole::Ordinary),
+            (ng[0], AggregateMemberRole::Interior),
         ]],
     );
 

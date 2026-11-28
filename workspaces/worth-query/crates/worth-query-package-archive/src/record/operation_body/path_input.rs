@@ -1,8 +1,10 @@
 //! Path-input guards reuse the existing root-path wire and nested-entry budget.
+
 use super::*;
+use crate::record::application_schema::wire_vocabulary::{decode_presence, write_presence};
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence as Presence, ApplicationOperationBodyPathFieldSource as Source,
+    ApplicationOperationBodyPathFieldSource as Source,
     ApplicationOperationBodyPathInputExpectation as Guard,
 };
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, guards: &[Guard]) -> Result<(), Denial> {
@@ -18,10 +20,7 @@ pub(super) fn write(output: &mut dyn BinaryEncodingSink, guards: &[Guard]) -> Re
             output.text(part)?;
         }
         super::super::foundational_aspect::write_scalar_type(output, guard.scalar_family)?;
-        output.u16(match guard.source.presence {
-            Presence::Required => 1,
-            Presence::Optional => 2,
-        })
+        write_presence(output, guard.source.presence)
     })
 }
 pub(super) fn decode(
@@ -35,11 +34,7 @@ pub(super) fn decode(
             WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let member = input.text()?.into();
         let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;
-        let presence = match input.u16()? {
-            1 => Presence::Required,
-            2 => Presence::Optional,
-            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-        };
+        let presence = decode_presence(input)?;
         let source = Source {
             path,
             field,

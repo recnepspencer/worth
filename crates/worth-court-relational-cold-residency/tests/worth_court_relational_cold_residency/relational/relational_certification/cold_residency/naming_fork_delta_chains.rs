@@ -99,7 +99,7 @@ fn two_scheme_cold_delta_branch_flattens_cleanly_at_second_checkpoint() {
         "child-s1",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     publish_scheme_group(
@@ -111,7 +111,7 @@ fn two_scheme_cold_delta_branch_flattens_cleanly_at_second_checkpoint() {
         "child-s2",
         vec![vec![
             (names[2], AggregateMemberRole::Anchor),
-            (names[3], AggregateMemberRole::Ordinary),
+            (names[3], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -127,7 +127,7 @@ fn two_scheme_cold_delta_branch_flattens_cleanly_at_second_checkpoint() {
         "main-first-grp",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[2], AggregateMemberRole::Ordinary),
+            (names[2], AggregateMemberRole::Interior),
         ]],
     );
     let (c2, src2) = capture_external_carrying(request, &r1, &src1);

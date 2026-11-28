@@ -10,6 +10,7 @@ use contracts::lineage::data::naming::{
     PersistentNameIdentityOwnerPort as _, PersistentNameReferenceBasis,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use worth_foundational::scan_name_discriminator_references;
 use worth_relational_contracts::internal_port as contracts;
 
 use crate::durability::authority::lineage_allocation::{
@@ -19,7 +20,6 @@ use contracts::durability::data::recovery_errors::{DurabilityError, RecoveryFail
 use contracts::identity::data::primitives::LineageId;
 use contracts::identity::data::record_ids::{EntityId, RelationId};
 use contracts::lineage::data::birth_wire::PersistedBirthClaim;
-use contracts::lineage::data::discriminator_scan::extract_embedded_name_refs;
 use contracts::lineage::data::events::{LineageEventKind, LineageSubject};
 use contracts::lineage::data::postures::{
     CommitNamingPlan, LineageBasisView, LineageMergeKeeper, LineagePostureClaim,
@@ -150,11 +150,11 @@ pub fn reconstruct_replay_naming_plan(
     let build_birth_request = |target: LineageRecordTarget,
                                parts: &PersistentNameBirthParts|
      -> Result<PersistentNameBirthRequest, DurabilityError> {
-        let embedded =
-            extract_embedded_name_refs(parts.canonical_discriminator()).map_err(|()| {
+        let embedded = scan_name_discriminator_references(parts.canonical_discriminator())
+            .map_err(|error| {
                 DurabilityError::new(
                     RecoveryFailureClass::ReplayFailure,
-                    "replay found malformed discriminator bytes in durable birth".to_owned(),
+                    format!("replay found malformed discriminator bytes in durable birth: {error}"),
                 )
             })?;
         let mut seen = BTreeSet::new();

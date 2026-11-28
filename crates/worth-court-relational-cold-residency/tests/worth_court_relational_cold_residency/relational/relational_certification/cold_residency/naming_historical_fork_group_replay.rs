@@ -44,7 +44,7 @@ fn historical_fork_reconstructs_groups_without_opening_sibling_group_log_pages()
         "r15-main-g1",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     let g1 = producer
@@ -71,7 +71,7 @@ fn historical_fork_reconstructs_groups_without_opening_sibling_group_log_pages()
         "r15-sibling-g",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[2], AggregateMemberRole::Ordinary),
+            (names[2], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -104,7 +104,7 @@ fn historical_fork_reconstructs_groups_without_opening_sibling_group_log_pages()
         "r15-main-g2",
         vec![vec![
             (names[1], AggregateMemberRole::Anchor),
-            (names[2], AggregateMemberRole::Ordinary),
+            (names[2], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -171,7 +171,7 @@ fn historical_fork_installs_prepared_lineage_under_tight_cache_without_second_re
         "r15-tight-g1",
         vec![vec![
             (all_names[0], AggregateMemberRole::Anchor),
-            (all_names[1], AggregateMemberRole::Ordinary),
+            (all_names[1], AggregateMemberRole::Interior),
         ]],
     );
     let g1 = producer
@@ -221,7 +221,7 @@ fn historical_fork_installs_prepared_lineage_under_tight_cache_without_second_re
         "r15-tight-g2",
         vec![vec![
             (all_names[1], AggregateMemberRole::Anchor),
-            (all_names[2], AggregateMemberRole::Ordinary),
+            (all_names[2], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -303,12 +303,12 @@ fn deep_fork_chain_historical_group_replay_preserves_checkpoint_order_via_min_he
         let pair = if level % 2 == 0 {
             vec![
                 (names[0], AggregateMemberRole::Anchor),
-                (names[1], AggregateMemberRole::Ordinary),
+                (names[1], AggregateMemberRole::Interior),
             ]
         } else {
             vec![
                 (names[0], AggregateMemberRole::Anchor),
-                (names[2], AggregateMemberRole::Ordinary),
+                (names[2], AggregateMemberRole::Interior),
             ]
         };
         let _ = publish_group_partition(
@@ -367,7 +367,7 @@ fn deep_fork_chain_historical_group_replay_preserves_checkpoint_order_via_min_he
         "r16-post",
         vec![vec![
             (names[1], AggregateMemberRole::Anchor),
-            (names[2], AggregateMemberRole::Ordinary),
+            (names[2], AggregateMemberRole::Interior),
         ]],
     );
 

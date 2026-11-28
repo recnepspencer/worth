@@ -29,7 +29,7 @@ pub struct AggregateGroupRoleCounts([u64; 3]);
 impl AggregateGroupRoleCounts {
     pub const fn slot(role: AggregateMemberRole) -> usize {
         match role {
-            AggregateMemberRole::Ordinary => 0,
+            AggregateMemberRole::Interior => 0,
             AggregateMemberRole::Anchor => 1,
             AggregateMemberRole::Boundary => 2,
         }

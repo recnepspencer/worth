@@ -67,7 +67,7 @@ fn compaction_preserves_retired_continuity_and_enforces_floor_on_all_accessors()
         "grp-1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let group_key = runtime
@@ -185,7 +185,7 @@ fn fresh_runtime_c1_ack_to_c2_carries_all_naming_pages_with_zero_reads() {
             &format!("ack-g-{b:02}"),
             vec![vec![
                 (n[0], AggregateMemberRole::Anchor),
-                (n[1], AggregateMemberRole::Ordinary),
+                (n[1], AggregateMemberRole::Interior),
             ]],
         );
     }

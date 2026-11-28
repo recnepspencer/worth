@@ -43,12 +43,7 @@ pub enum ApplicationInvariantGroup {
     RelationIntegrity,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum ApplicationInvariantCostPosture {
-    Touched,
-    Partition,
-    Global,
-}
+pub use worth_foundational::InvariantCostClass as ApplicationInvariantCostPosture;
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum ApplicationInvariantScopeTarget {

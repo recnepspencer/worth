@@ -321,11 +321,15 @@ pub(super) fn build_foundational_contract(
         ApplicationFieldPresence::Optional => aspects()
             .struct_fields()
             .optional(first_key.as_str(), *first_family),
+        ApplicationFieldPresence::Defaulted => aspects()
+            .struct_fields()
+            .defaulted(first_key.as_str(), *first_family),
     };
     for (field, (family, presence, _)) in fields {
         shape = match presence {
             ApplicationFieldPresence::Required => shape.required(field.as_str(), *family),
             ApplicationFieldPresence::Optional => shape.optional(field.as_str(), *family),
+            ApplicationFieldPresence::Defaulted => shape.defaulted(field.as_str(), *family),
         };
     }
     let shape = shape

@@ -43,7 +43,7 @@ pub(super) fn transitions(
                 let key =
                     member_key(member, |carrier| outcome.name_after(carrier)).map_err(refuse)?;
                 members
-                    .insert(key, member.clone(), AggregateMemberRole::Ordinary)
+                    .insert(key, member.clone(), AggregateMemberRole::Interior)
                     .map_err(refuse)?;
             }
             scope.declared.push(members);

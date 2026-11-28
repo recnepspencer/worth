@@ -84,7 +84,7 @@ fn record(members: Vec<Member>) -> Schema {
 fn typed_ordered_events_have_fresh_versioned_transport_and_complete_physical_closure() {
     let original = member();
     let bytes = encode_member(&original);
-    assert_eq!(&bytes[..4], &[0, 47, 0, 2]);
+    assert_eq!(&bytes[..4], &[0, 47, 0, 3]);
     assert_eq!(decode_member(&bytes), original);
     let schema = Events::declaration().unwrap();
     let projected = Schema::project(schema.erased());
@@ -96,7 +96,7 @@ fn typed_ordered_events_have_fresh_versioned_transport_and_complete_physical_clo
     let admitted = readmit(record(restored)).unwrap();
     assert_eq!(admitted.identity(), readmit(projected).unwrap().identity());
     let closure = application_derived_relation_source_closure(admitted.members(), "Live").unwrap();
-    assert!(closure.has_extended_expression);
+    assert!(closure.requires_composite_source);
     assert!(closure.projected_domains.is_empty());
     let names = closure
         .physical
@@ -162,12 +162,12 @@ fn event_transport_rejects_stale_unknown_and_noncanonical_versions() {
         try_decode_member(&bytes).unwrap_err().kind(),
         ArchiveKind::UnsupportedRecordVariant
     );
-    bytes[2..4].copy_from_slice(&3u16.to_be_bytes());
+    bytes[2..4].copy_from_slice(&4u16.to_be_bytes());
     assert_eq!(
         try_decode_member(&bytes).unwrap_err().kind(),
         ArchiveKind::UnsupportedRecordVariant
     );
-    let old_extended = derived(
+    let union = derived(
         "Both",
         vec![
             source(SourceKind::Stored, "Edge"),
@@ -175,9 +175,9 @@ fn event_transport_rejects_stale_unknown_and_noncanonical_versions() {
             Node::Union { left: 0, right: 1 },
         ],
     );
-    let mut bytes = encode_member(&old_extended);
-    assert_eq!(&bytes[..4], &[0, 47, 0, 1]);
-    let mut expected = vec![0, 47, 0, 1];
+    let mut bytes = encode_member(&union);
+    assert_eq!(&bytes[..4], &[0, 47, 0, 3]);
+    let mut expected = vec![0, 47, 0, 3];
     let text = |bytes: &mut Vec<u8>, value: &str| {
         bytes.extend_from_slice(&(value.len() as u32).to_be_bytes());
         bytes.extend_from_slice(value.as_bytes());
@@ -203,11 +203,11 @@ fn event_transport_rejects_stale_unknown_and_noncanonical_versions() {
     for word in [3u16, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0] {
         expected.extend_from_slice(&word.to_be_bytes());
     }
-    assert_eq!(bytes, expected, "literal pre-event tag47 version1 bytes");
+    assert_eq!(bytes, expected, "canonical union bytes");
     bytes[2..4].copy_from_slice(&2u16.to_be_bytes());
     assert_eq!(
         try_decode_member(&bytes).unwrap_err().kind(),
-        ArchiveKind::InvalidRecordShape
+        ArchiveKind::UnsupportedRecordVariant
     );
 }
 #[test]

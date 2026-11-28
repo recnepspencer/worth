@@ -1,13 +1,9 @@
 //! Lower typed OneOf membership to the same Native keys as its case records.
-use std::collections::BTreeMap;
-use worth_foundational::facade::{AspectKey, CanonicalDigestId};
+use std::collections::{BTreeMap, BTreeSet};
+use worth_foundational::facade::{AspectExclusionGroupSpec, AspectKey, CanonicalDigestId};
 use worth_query_declaration::facade::application_schema::fragment::FragmentCatalog;
-#[derive(Clone, Debug)]
-pub(super) struct WorthQueryInstalledAspectExclusionGroup {
-    pub group_id: String,
-    pub aspects: std::collections::BTreeSet<AspectKey>,
-    pub required: bool,
-}
+pub(super) type WorthQueryInstalledAspectExclusionGroup =
+    AspectExclusionGroupSpec<BTreeSet<AspectKey>>;
 
 pub(super) fn lower(
     fragments: &FragmentCatalog,

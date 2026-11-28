@@ -1,8 +1,6 @@
-use super::lower_cross_context;
 use std::collections::BTreeMap;
 use worth_query_installation::facade::{
     ApplicationRelationDeletionPolicy, ApplicationRelationIntegrityRecord,
-    ApplicationRelationUniquenessScope,
 };
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
@@ -11,7 +9,7 @@ use worth_relational::facade::schema::{
     DirectedTraversalKind, EndpointDeletionIntegrityDeclaration, EndpointDeletionIntegrityMode,
     EndpointKindContractDeclaration, MinimumCardinalityEnforcement, PairMinimumSemantics,
     PartitionIsolationContractDeclaration, PartitionIsolationMode, RelationIntegrityDeclarations,
-    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration, UniquenessScope,
+    SymmetryContractDeclaration, SymmetryMode, UniquenessContractDeclaration,
 };
 
 pub(super) fn lower_relation_integrity(
@@ -31,7 +29,7 @@ pub(super) fn lower_relation_integrity(
         allowed_source_kinds: vec![from_kind],
         allowed_target_kinds: to_kinds,
         self_edges_allowed: integrity.endpoints.self_edges_allowed,
-        cross_context_policy: lower_cross_context(integrity.endpoints.cross_context_policy),
+        cross_context_policy: integrity.endpoints.cross_context_policy,
     }];
     let cardinality = integrity
         .cardinality
@@ -74,14 +72,7 @@ pub(super) fn lower_relation_integrity(
             .unique
             .map(|scope| UniquenessContractDeclaration {
                 contract_id: ContractId::new(format!("{relation}:unique")),
-                scope: match scope {
-                    ApplicationRelationUniquenessScope::DirectedSemanticEdge => {
-                        UniquenessScope::DirectedSemanticEdge
-                    }
-                    ApplicationRelationUniquenessScope::NormalizedSymmetricEdge => {
-                        UniquenessScope::NormalizedSymmetricEdge
-                    }
-                },
+                scope,
             })
             .into_iter()
             .collect(),

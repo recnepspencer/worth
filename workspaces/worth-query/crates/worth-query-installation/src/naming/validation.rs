@@ -15,10 +15,7 @@ pub(super) fn validate_and_lower_scheme(
 ) -> Result<InstalledNameSchemeLayout, ApplicationNameSchemeDenial> {
     let scheme_id = scheme.scheme_id();
     validate_scheme_identifier(scheme_id)?;
-    if scheme.subject_name().is_empty()
-        || scheme.subject_name().trim() != scheme.subject_name()
-        || scheme.subject_name().contains('.')
-    {
+    if !worth_foundational::is_valid_simple_identifier(scheme.subject_name()) {
         return Err(ApplicationNameSchemeDenial::InvalidSubjectName {
             scheme_id: scheme_id.to_owned(),
             subject_name: scheme.subject_name().to_owned(),

@@ -187,10 +187,7 @@ impl WorthQueryInstalledRelatedPredicate {
                     ),
                     text(
                         format!("{tpath}.presence"),
-                        match target.presence() {
-                            ApplicationFieldPresence::Required => "required",
-                            ApplicationFieldPresence::Optional => "optional",
-                        },
+                        (target.presence()).canonical_name(),
                     ),
                 ]);
             }

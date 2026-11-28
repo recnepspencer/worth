@@ -43,7 +43,7 @@ fn transition(scheme: &str, groups: &[u8]) -> CommittedGroupTransition {
                 let role = if offset == 0 {
                     AggregateMemberRole::Anchor
                 } else {
-                    AggregateMemberRole::Ordinary
+                    AggregateMemberRole::Interior
                 };
                 members.insert(name, carrier, role).unwrap();
             }
@@ -170,7 +170,7 @@ fn kept(removed: &[u8]) -> CommittedGroupTransition {
     }
     let carrier = NativeMemberKey::Entity(EntityId::new(PartitionId(1), 99, 1));
     delta
-        .upsert(name(99), carrier, AggregateMemberRole::Ordinary)
+        .upsert(name(99), carrier, AggregateMemberRole::Interior)
         .unwrap();
     let mut committed = transition("a.loop.v1", &[10]);
     committed.transition.assignments[0].change = AggregateGroupChange::Kept(delta);

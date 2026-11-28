@@ -2,7 +2,6 @@ pub mod commit_births;
 pub mod commit_finalization;
 pub mod commit_name_preview;
 pub mod committed_allocations;
-use worth_relational_contracts::internal_port::lineage::data::discriminator_scan;
 mod mint_order;
 pub mod name_minting;
 pub mod name_readmission;
@@ -36,7 +35,6 @@ pub use commit_name_preview::{
 pub use posture_finalization::prepare_posture_finalization;
 #[doc(hidden)]
 pub mod finalization_test_support;
-pub use discriminator_scan::extract_embedded_name_refs;
 pub use finalization_test_support::{
     finalize_postures_in_working_state_for_test, finalize_with_schema_for_test,
 };

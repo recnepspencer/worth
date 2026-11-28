@@ -14,8 +14,8 @@ pub mod application_schema {
     };
     pub use worth_foundational::facade::{
         CanonicalDate, CanonicalF32, CanonicalF64, CanonicalTemporalTextDenial, CanonicalTime,
-        CanonicalTimestamp, CanonicalTimestampTz, InlineBytes, InlineBytesLengthDenial,
-        InternedString,
+        CanonicalTimestamp, CanonicalTimestampTz, FiniteCanonicalF64, InlineBytes,
+        InlineBytesLengthDenial, InternedString,
     };
     pub use worth_foundational::CanonicalDigestId;
 }

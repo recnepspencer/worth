@@ -1,7 +1,6 @@
 pub mod artifacts;
 pub mod birth_digest;
 pub mod birth_wire;
-pub mod discriminator_scan;
 pub mod event_serde;
 pub mod events;
 pub mod graph;

@@ -62,7 +62,7 @@ fn run_equal_cardinality_swap_interleaving(
                         if i == 0 {
                             AggregateMemberRole::Anchor
                         } else {
-                            AggregateMemberRole::Ordinary
+                            AggregateMemberRole::Interior
                         },
                     )
                 })
@@ -203,7 +203,7 @@ fn run_warm_historical_forks(
                         if i == 0 {
                             AggregateMemberRole::Anchor
                         } else {
-                            AggregateMemberRole::Ordinary
+                            AggregateMemberRole::Interior
                         },
                     )
                 })

@@ -73,10 +73,7 @@ pub(in crate::application_schema::operation_definition::body) fn append_operands
                 ] {
                     part(text);
                 }
-                part(match presence {
-                    crate::application_schema::ApplicationFieldPresence::Required => "required",
-                    crate::application_schema::ApplicationFieldPresence::Optional => "optional",
-                });
+                part((presence).canonical_name());
             }
             Source::SignedEvidence(source) => {
                 part("current-signed-evidence");
@@ -107,10 +104,7 @@ pub(in crate::application_schema::operation_definition::body) fn append_operands
                 part(field.field());
                 part(binding.as_str());
                 part(scalar_family.canonical_name());
-                part(match presence {
-                    crate::application_schema::ApplicationFieldPresence::Required => "required",
-                    crate::application_schema::ApplicationFieldPresence::Optional => "optional",
-                });
+                part((presence).canonical_name());
                 part(if *presence_only { "presence" } else { "value" });
             }
             Source::RelatedItemCount {

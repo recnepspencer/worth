@@ -85,7 +85,7 @@ fn long_branch_id_group_transition_checkpoints_reopens_and_replays_history() {
         "r7-long-group",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     let basis_c1 = observe_branch(&producer, &long_branch);
@@ -109,7 +109,7 @@ fn long_branch_id_group_transition_checkpoints_reopens_and_replays_history() {
         "r7-long-group-2",
         vec![vec![
             (names[1], AggregateMemberRole::Anchor),
-            (names[0], AggregateMemberRole::Ordinary),
+            (names[0], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -281,7 +281,7 @@ fn capture_mixed_inline_and_chunked_group_log(
         "r8-inline-row",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     let big_members: Vec<_> = names[2..]
@@ -291,7 +291,7 @@ fn capture_mixed_inline_and_chunked_group_log(
             let role = if i == 0 {
                 AggregateMemberRole::Anchor
             } else {
-                AggregateMemberRole::Ordinary
+                AggregateMemberRole::Interior
             };
             (name, role)
         })
@@ -364,7 +364,7 @@ fn tampered_chk24_forging_both_continuation_digest_and_chunk_roster_fails_closed
         "r8-post-reopen-advance",
         vec![vec![
             (names[1], AggregateMemberRole::Anchor),
-            (names[0], AggregateMemberRole::Ordinary),
+            (names[0], AggregateMemberRole::Interior),
         ]],
     );
     // Stage 2 (first fault of forged primary GROUP_LOG page): admit() detects digest mismatch.

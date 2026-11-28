@@ -90,7 +90,6 @@ pub(super) fn evaluate_uniqueness_contract(
                 }
             }
         }
-        _ => unreachable!("unhandled Relational contract variant"),
     }
     canonicalize_violations(violations)
 }

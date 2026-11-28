@@ -8,7 +8,7 @@ const ABSENT: usize = 4;
 
 fn role(code: u8) -> Role {
     match code {
-        0 => Role::Ordinary,
+        0 => Role::Interior,
         1 => Role::Anchor,
         _ => Role::Boundary,
     }

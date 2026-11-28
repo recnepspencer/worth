@@ -1,8 +1,10 @@
 //! Computed path writes reuse the root-path record and ordinary sequence budget.
+
 use super::*;
+use crate::record::application_schema::wire_vocabulary::{decode_presence, write_presence};
 use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence, ApplicationOperationBodyPathFieldSource,
+    ApplicationOperationBodyPathFieldSource,
     ApplicationOperationBodyPathValueAssignment as Assignment,
 };
 pub(super) fn write(
@@ -20,10 +22,7 @@ pub(super) fn write(
         ] {
             output.text(part)?;
         }
-        output.u16(match step.target.presence {
-            ApplicationFieldPresence::Required => 1,
-            ApplicationFieldPresence::Optional => 2,
-        })
+        write_presence(output, step.target.presence)
     })
 }
 pub(super) fn decode(
@@ -36,11 +35,7 @@ pub(super) fn decode(
         let binding =
             WorthQueryPortableTypeIdentity::from_untrusted(ARCHIVE_DECODE, input.text()?.into());
         let value = input.text()?.into();
-        let presence = match input.u16()? {
-            1 => ApplicationFieldPresence::Required,
-            2 => ApplicationFieldPresence::Optional,
-            _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-        };
+        let presence = decode_presence(input)?;
         let target = ApplicationOperationBodyPathFieldSource {
             path,
             field,

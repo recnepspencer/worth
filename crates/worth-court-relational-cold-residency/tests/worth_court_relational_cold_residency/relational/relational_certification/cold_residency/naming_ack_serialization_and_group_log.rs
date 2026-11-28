@@ -133,7 +133,7 @@ fn tampered_chk24_stripping_primary_group_log_pages_keeping_chunks_refuses_corru
                 if i == 0 {
                     AggregateMemberRole::Anchor
                 } else {
-                    AggregateMemberRole::Ordinary
+                    AggregateMemberRole::Interior
                 },
             )
         })
@@ -297,7 +297,7 @@ fn tampered_chk24_dropping_earlier_primary_group_log_page_refuses_corrupt_checkp
                 let role = if i == 0 {
                     AggregateMemberRole::Anchor
                 } else {
-                    AggregateMemberRole::Ordinary
+                    AggregateMemberRole::Interior
                 };
                 (name, role)
             })

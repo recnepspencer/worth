@@ -30,7 +30,7 @@ fn derived_recipe_collection_and_read_meaning_round_trip_without_stored_ids() {
     );
     let collection = association("TwoSteps");
     for (member, tag) in [
-        (definition.clone(), 41_u16),
+        (definition.clone(), 47_u16),
         (collection.clone(), 42),
         (
             Member::OperationDerivedRead {
@@ -131,8 +131,8 @@ fn malformed_expression_refuses_before_tag_and_unknown_node_refuses_transport() 
     assert!(output.into_bytes().is_empty());
     let valid = derived("First", vec![source(SourceKind::Stored, "Edge")]);
     let mut bytes = encode_member(&valid);
-    // Member tag, three owned strings, then node count precede the first node.
-    let node_tag = 2 + (4 + "First".len()) + 2 * (4 + "E".len()) + 4;
+    // Tag, grammar version, relation name, two tagged endpoints, and node count.
+    let node_tag = 2 + 2 + (4 + "First".len()) + 2 * (2 + 4 + "E".len()) + 4;
     bytes[node_tag..node_tag + 2].copy_from_slice(&99_u16.to_be_bytes());
     assert_eq!(
         try_decode_member(&bytes).unwrap_err().kind(),

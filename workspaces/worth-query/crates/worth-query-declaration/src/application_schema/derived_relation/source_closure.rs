@@ -10,8 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// Full descriptive source roster. Issuance still checks actual installed views.
 pub struct ApplicationDerivedRelationSourceClosure<'schema> {
-    /// True when any actual named definition needs the extended expression grammar.
-    pub has_extended_expression: bool,
+    /// True when the read needs a composite Native source beyond its physical leaves.
+    pub requires_composite_source: bool,
     pub physical: Vec<&'schema ApplicationDerivedRelationSource>,
     pub projected_domains:
         Vec<&'schema crate::application_schema::WorthQueryPortableProjectedMemberDomainParts>,
@@ -67,7 +67,7 @@ pub fn application_derived_relation_source_closure<'schema>(
     let mut visited = BTreeSet::new();
     let mut leaves = BTreeSet::new();
     let mut projected = BTreeSet::new();
-    let mut has_extended_expression = false;
+    let mut requires_composite_source = false;
     while let Some(name) = pending.pop() {
         if !visited.insert(name) {
             continue;
@@ -75,7 +75,10 @@ pub fn application_derived_relation_source_closure<'schema>(
         let definition = definitions
             .get(name)
             .ok_or_else(|| fail(Cause::MissingSource))?;
-        has_extended_expression |= !definition.is_legacy_shape();
+        let parts = definition.parts();
+        requires_composite_source |= parts.from.entity().is_none()
+            || parts.to.entity().is_none()
+            || !parts.expression.is_entity_path();
         for node in &definition.parts().expression.nodes {
             if let Node::CarrierLift {
                 domain,
@@ -102,7 +105,7 @@ pub fn application_derived_relation_source_closure<'schema>(
         }
     }
     Ok(ApplicationDerivedRelationSourceClosure {
-        has_extended_expression,
+        requires_composite_source,
         physical: leaves.into_iter().collect(),
         projected_domains: projected.into_iter().collect(),
     })

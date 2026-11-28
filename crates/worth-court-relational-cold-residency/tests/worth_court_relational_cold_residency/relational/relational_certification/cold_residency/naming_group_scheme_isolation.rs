@@ -48,7 +48,7 @@ fn unused_group_scheme_commits_cleanly_while_existing_scheme_cold_page_is_damage
             let role = if i == 0 {
                 AggregateMemberRole::Anchor
             } else {
-                AggregateMemberRole::Ordinary
+                AggregateMemberRole::Interior
             };
             (n, role)
         })
@@ -106,7 +106,7 @@ fn unused_group_scheme_commits_cleanly_while_existing_scheme_cold_page_is_damage
         Vec::new(),
         vec![vec![
             (all_names[0], AggregateMemberRole::Anchor),
-            (all_names[1], AggregateMemberRole::Ordinary),
+            (all_names[1], AggregateMemberRole::Interior),
         ]],
     );
     tx.attach_naming_plan(plan);

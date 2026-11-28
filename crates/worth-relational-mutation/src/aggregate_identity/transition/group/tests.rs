@@ -216,8 +216,8 @@ fn group_name_hashes_only_scheme_anchor_and_rule_under_v2_domain() {
 #[test]
 fn allocation_commit_and_rebuild_order_leave_names_byte_identical() {
     let names = [9, 3, 7, 1, 5];
-    let spec: Spec<'_> = &[(9, Role::Ordinary), (3, Role::Ordinary), (7, Role::Anchor)];
-    let other: Spec<'_> = &[(1, Role::Ordinary), (5, Role::Ordinary)];
+    let spec: Spec<'_> = &[(9, Role::Interior), (3, Role::Interior), (7, Role::Anchor)];
+    let other: Spec<'_> = &[(1, Role::Interior), (5, Role::Interior)];
     let reference = project(
         &worlds(&names)[0]
             .run(Rule::Anchor, &[], &BTreeSet::new(), &[spec, other])
@@ -243,7 +243,7 @@ fn allocation_commit_and_rebuild_order_leave_names_byte_identical() {
 fn retired_group_revives_its_exact_name_around_the_same_anchor() {
     for world in worlds(&[6, 2, 8, 4]) {
         let rule = Rule::Anchor;
-        let group: Spec<'_> = &[(6, Role::Anchor), (2, Role::Ordinary)];
+        let group: Spec<'_> = &[(6, Role::Anchor), (2, Role::Interior)];
         let prior = world.born(rule, &[group]);
         let original = prior[0].identity;
         let dissolved = world.run(rule, &prior, &BTreeSet::new(), &[]).unwrap();
@@ -252,7 +252,7 @@ fn retired_group_revives_its_exact_name_around_the_same_anchor() {
             dissolved.lineage,
             BTreeSet::from([Event::Retired { group: original }])
         );
-        let reformed: Spec<'_> = &[(8, Role::Ordinary), (6, Role::Anchor), (4, Role::Ordinary)];
+        let reformed: Spec<'_> = &[(8, Role::Interior), (6, Role::Anchor), (4, Role::Interior)];
         let revived = world
             .run(rule, &[], &dissolved.retired, &[reformed])
             .unwrap();

@@ -216,7 +216,7 @@ pub(super) fn decode(
         47 => derived_relation::decode(47, input, budget),
         45 => inspection::decode(input, budget),
         44 => projected_member_domain::decode(input, budget),
-        tag @ 41..=43 => derived_relation::decode(tag, input, budget),
+        tag @ 42..=43 => derived_relation::decode(tag, input, budget),
         39 => resource::decode(input, budget)
             .map(|definition| ApplicationSchemaMember::ApplicationResource { definition }),
 
@@ -257,7 +257,7 @@ pub(super) fn member_tag(member: &ApplicationSchemaMember) -> u16 {
         ApplicationSchemaMember::ManagedIndex { .. } => 48,
         ApplicationSchemaMember::ProjectedMemberDomain { .. } => 44,
         ApplicationSchemaMember::ApplicationQueryInspection { .. } => 45,
-        ApplicationSchemaMember::DerivedRelation { definition } => if definition.is_legacy_shape() { 41 } else { 47 },
+        ApplicationSchemaMember::DerivedRelation { .. } => 47,
         ApplicationSchemaMember::DerivedComponentSet { .. } => 46,
         ApplicationSchemaMember::RuleReadableCollection { .. } => 42,
         ApplicationSchemaMember::OperationDerivedRead { .. } => 43,

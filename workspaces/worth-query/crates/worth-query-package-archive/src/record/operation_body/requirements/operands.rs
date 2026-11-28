@@ -40,7 +40,7 @@ pub(in crate::record::operation_body) fn write_operands(
                     output,
                     *scalar_family,
                 )?;
-                output.u8(u8::from(*presence == ApplicationFieldPresence::Optional))
+                output.u8(presence_tag(*presence))
             }
             Source::SignedEvidence(source) => {
                 output.u16(4)?;
@@ -92,7 +92,7 @@ pub(in crate::record::operation_body) fn write_operands(
                     output,
                     *scalar_family,
                 )?;
-                output.u8(u8::from(*presence == ApplicationFieldPresence::Optional))?;
+                output.u8(presence_tag(*presence))?;
                 output.u8(u8::from(*presence_only))
             }
             Source::RelatedItemCount {
@@ -138,11 +138,7 @@ pub(in crate::record::operation_body) fn decode_operands(
                     input.text()?.to_owned(),
                 ),
                 scalar_family: super::super::super::foundational_aspect::decode_scalar_type(input)?,
-                presence: if boolean(input)? {
-                    ApplicationFieldPresence::Optional
-                } else {
-                    ApplicationFieldPresence::Required
-                },
+                presence: decode_presence(input)?,
             },
             5 if version >= 18 => Source::RelatedSignedEvidence {
                 relation: input.text()?.to_owned(),
@@ -175,11 +171,7 @@ pub(in crate::record::operation_body) fn decode_operands(
                 );
                 let scalar_family =
                     super::super::super::foundational_aspect::decode_scalar_type(input)?;
-                let presence = if boolean(input)? {
-                    ApplicationFieldPresence::Optional
-                } else {
-                    ApplicationFieldPresence::Required
-                };
+                let presence = decode_presence(input)?;
                 let presence_only = boolean(input)?;
                 Source::Field {
                     field,
@@ -203,4 +195,21 @@ pub(in crate::record::operation_body) fn decode_operands(
         };
         Ok(Operand::from_untrusted(ARCHIVE_DECODE, name, source))
     })
+}
+
+fn presence_tag(presence: ApplicationFieldPresence) -> u8 {
+    match presence {
+        ApplicationFieldPresence::Required => 0,
+        ApplicationFieldPresence::Optional => 1,
+        ApplicationFieldPresence::Defaulted => 2,
+    }
+}
+
+fn decode_presence(input: &mut BinaryInput<'_>) -> Result<ApplicationFieldPresence, Denial> {
+    match input.u8()? {
+        0 => Ok(ApplicationFieldPresence::Required),
+        1 => Ok(ApplicationFieldPresence::Optional),
+        2 => Ok(ApplicationFieldPresence::Defaulted),
+        _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
+    }
 }

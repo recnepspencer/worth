@@ -57,7 +57,7 @@ fn parent_commit_cost_is_flat_across_1x_vs_10x_unrelated_older_forks() {
             seed_e[0],
             vec![vec![
                 (seed_n[0], AggregateMemberRole::Anchor),
-                (seed_n[1], AggregateMemberRole::Ordinary),
+                (seed_n[1], AggregateMemberRole::Interior),
             ]],
         );
         // Create `unrelated_forks` older direct forks at distinct earlier commits.
@@ -75,7 +75,7 @@ fn parent_commit_cost_is_flat_across_1x_vs_10x_unrelated_older_forks() {
                 e[0],
                 vec![vec![
                     (seed_n[0], AggregateMemberRole::Anchor),
-                    (n[0], AggregateMemberRole::Ordinary),
+                    (n[0], AggregateMemberRole::Interior),
                 ]],
             );
         });

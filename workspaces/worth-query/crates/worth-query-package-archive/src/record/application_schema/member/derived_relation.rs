@@ -6,18 +6,13 @@ use crate::denial::{
 };
 use crate::record::decode_budget::RecordDecodeAttempt;
 use crate::record::foundational_value::{decode_bool, write_bool};
-use crate::record::sequence::{decode_sequence, write_sequence};
-use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationDerivedRelationExpression, ApplicationDerivedRelationNode as Node,
-    ApplicationDerivedRelationSource, ApplicationDerivedRelationSourceKind as SourceKind,
     ApplicationRelationGraphLaws, ApplicationRuleReadableCollectionAssociation,
-    ApplicationSchemaMember as Member, ErasedApplicationDerivedRelationDefinition,
-    WorthQueryPortableDerivedRelationParts,
+    ApplicationSchemaMember as Member,
 };
 
-mod extended;
-pub(super) use extended::{decode_member_domain, write_member_domain};
+mod expression_wire;
+pub(super) use expression_wire::{decode_member_domain, write_member_domain};
 
 use super::super::wire_vocabulary::{decode_optional, write_optional};
 
@@ -37,17 +32,7 @@ pub(super) fn require_shape(member: &Member) -> Result<(), Denial> {
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, member: &Member) -> Result<(), Denial> {
     match member {
-        Member::DerivedRelation { definition } => {
-            if !definition.is_legacy_shape() {
-                return extended::write(output, definition);
-            }
-            let parts = definition.parts();
-            for text in [parts.relation.as_str(), parts.from.name(), parts.to.name()] {
-                output.text(text)?;
-            }
-            write_sequence(output, &parts.expression.nodes, write_node)?;
-            write_laws(output, &parts.laws)
-        }
+        Member::DerivedRelation { definition } => expression_wire::write(output, definition),
         Member::RuleReadableCollection { association } => {
             for text in [&association.relation, &association.feature] {
                 output.text(text)?;
@@ -81,27 +66,7 @@ pub(super) fn decode(
     budget: &mut RecordDecodeAttempt,
 ) -> Result<Member, Denial> {
     let member = match tag {
-        41 => {
-            budget.require_nesting_depth(2)?;
-            let relation = input.text()?.to_owned();
-            let from = input.text()?.to_owned();
-            let to = input.text()?.to_owned();
-            let nodes = decode_sequence(input, budget, 10, |input, _| decode_node(input))?;
-            let laws = decode_laws(input, budget)?;
-            Member::DerivedRelation {
-                definition: ErasedApplicationDerivedRelationDefinition::from_untrusted_parts(
-                    ARCHIVE_DECODE,
-                    WorthQueryPortableDerivedRelationParts {
-                        relation,
-                        from: from.into(),
-                        to: to.into(),
-                        expression: ApplicationDerivedRelationExpression { nodes },
-                        laws,
-                    },
-                ),
-            }
-        }
-        47 => return extended::decode(input, budget),
+        47 => return expression_wire::decode(input, budget),
         42 => Member::RuleReadableCollection {
             association: ApplicationRuleReadableCollectionAssociation {
                 relation: input.text()?.to_owned(),
@@ -122,69 +87,6 @@ pub(super) fn decode(
     };
     require_shape(&member)?;
     Ok(member)
-}
-
-fn write_node(output: &mut dyn BinaryEncodingSink, node: &Node) -> Result<(), Denial> {
-    match node {
-        Node::Source(source) => {
-            output.u16(1)?;
-            output.u16(match source.kind {
-                SourceKind::Stored => 1,
-                SourceKind::Derived => 2,
-            })?;
-            for text in [
-                source.relation.as_str(),
-                source.from.name(),
-                source.to.name(),
-            ] {
-                output.text(text)?;
-            }
-            Ok(())
-        }
-        Node::Compose { left, right } => {
-            output.u16(2)?;
-            output.u64(*left as u64)?;
-            output.u64(*right as u64)
-        }
-        Node::Reverse { input } | Node::WithoutSelfEdges { input } => {
-            output.u16(if matches!(node, Node::Reverse { .. }) {
-                3
-            } else {
-                4
-            })?;
-            output.u64(*input as u64)
-        }
-        Node::CarrierLift { .. }
-        | Node::Union { .. }
-        | Node::Intersection { .. }
-        | Node::OrderedEvents { .. } => Err(Denial::new(Kind::InvalidRecordShape)),
-    }
-}
-
-fn decode_node(input: &mut BinaryInput<'_>) -> Result<Node, Denial> {
-    Ok(match input.u16()? {
-        1 => Node::Source(ApplicationDerivedRelationSource {
-            kind: match input.u16()? {
-                1 => SourceKind::Stored,
-                2 => SourceKind::Derived,
-                _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-            },
-            relation: input.text()?.to_owned(),
-            from: input.text()?.into(),
-            to: input.text()?.into(),
-        }),
-        2 => Node::Compose {
-            left: decode_index(input)?,
-            right: decode_index(input)?,
-        },
-        3 => Node::Reverse {
-            input: decode_index(input)?,
-        },
-        4 => Node::WithoutSelfEdges {
-            input: decode_index(input)?,
-        },
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    })
 }
 
 fn decode_index(input: &mut BinaryInput<'_>) -> Result<usize, Denial> {

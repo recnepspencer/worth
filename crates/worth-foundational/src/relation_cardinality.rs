@@ -1,5 +1,8 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub struct ApplicationRelationCardinality {
+use serde::{Deserialize, Serialize};
+
+/// Symbolic bounds on source, target and observed directed pairs.
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub struct RelationCardinality {
     pub source_min: Option<u64>,
     pub source_max: Option<u64>,
     pub target_min: Option<u64>,
@@ -8,7 +11,7 @@ pub struct ApplicationRelationCardinality {
     pub pair_max: Option<u64>,
 }
 
-impl ApplicationRelationCardinality {
+impl RelationCardinality {
     pub const fn new(
         source_min: Option<u64>,
         source_max: Option<u64>,
@@ -40,7 +43,7 @@ impl ApplicationRelationCardinality {
             || self.pair_max.is_some()
     }
 
-    pub(crate) fn is_valid(self) -> bool {
+    pub fn is_valid(self) -> bool {
         [self.source_min, self.target_min, self.pair_min]
             .into_iter()
             .flatten()

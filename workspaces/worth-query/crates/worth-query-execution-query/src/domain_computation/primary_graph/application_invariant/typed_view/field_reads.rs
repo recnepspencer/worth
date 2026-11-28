@@ -61,7 +61,9 @@ pub fn field_material<'a>(
         Some(raw) => Ok(Some(raw)),
         None => match presence {
             ApplicationFieldPresence::Optional => Ok(None),
-            ApplicationFieldPresence::Required => Err(missing_required()),
+            ApplicationFieldPresence::Required | ApplicationFieldPresence::Defaulted => {
+                Err(missing_required())
+            }
         },
     }
 }

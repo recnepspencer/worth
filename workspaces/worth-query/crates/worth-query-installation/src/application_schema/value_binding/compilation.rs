@@ -206,16 +206,7 @@ fn validate_contract(
     let (native_family, native_requirement, native_codec) = native
         .field_value_contract(&field_key)
         .ok_or_else(|| denial(DenialKind::NativeContractMissing, locus))?;
-    let requirement = match presence {
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Required => {
-            worth_foundational::facade::FieldRequirement::Required
-        }
-        worth_query_declaration::facade::application_schema::ApplicationFieldPresence::Optional => {
-            worth_foundational::facade::FieldRequirement::Optional
-        }
-    };
-    if native_codec != codec || native_family != scalar_family || native_requirement != requirement
-    {
+    if native_codec != codec || native_family != scalar_family || native_requirement != presence {
         return Err(denial(DenialKind::ContractMismatch, locus));
     }
     Ok(())

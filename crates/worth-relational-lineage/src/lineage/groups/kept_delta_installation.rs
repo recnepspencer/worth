@@ -64,7 +64,7 @@ fn born(g: u8, members: &[u8]) -> CommittedGroupTransition {
         let role = if at == 0 {
             Role::Anchor
         } else {
-            Role::Ordinary
+            Role::Interior
         };
         set.insert(name(*n), carrier(*n, 1), role).unwrap();
     }
@@ -107,7 +107,7 @@ fn kept_deltas_install_exactly_the_touched_members() {
         .upsert(name(3), carrier(3, 2), Role::Boundary)
         .unwrap();
     delta
-        .upsert(name(9), carrier(9, 1), Role::Ordinary)
+        .upsert(name(9), carrier(9, 1), Role::Interior)
         .unwrap();
     let change = committed(vec![kept(10, 1, delta)], BTreeSet::new());
     state.apply(CommitId(3), &[change]).unwrap();
@@ -125,7 +125,7 @@ fn kept_deltas_install_exactly_the_touched_members() {
             if n == 3 {
                 Role::Boundary
             } else {
-                Role::Ordinary
+                Role::Interior
             },
         )
     });
@@ -138,7 +138,7 @@ fn kept_deltas_install_exactly_the_touched_members() {
     let skip = BTreeSet::from([name(2)]);
     assert_eq!(groups.least_member(&group(10), None, &skip), Some(name(3)));
     assert_eq!(
-        groups.least_member(&group(10), Some(Role::Ordinary), &skip),
+        groups.least_member(&group(10), Some(Role::Interior), &skip),
         Some(name(4))
     );
     assert_eq!(
@@ -160,7 +160,7 @@ fn non_canonical_kept_deltas_refuse_with_the_group_named() {
     )])));
     let mut unchanged = AggregateGroupMemberDelta::new();
     unchanged
-        .upsert(name(2), carrier(2, 1), Role::Ordinary)
+        .upsert(name(2), carrier(2, 1), Role::Interior)
         .unwrap();
     assert!(posture(state.verify(&[committed(
         vec![kept(10, 1, unchanged)],
@@ -180,7 +180,7 @@ fn non_canonical_kept_deltas_refuse_with_the_group_named() {
 fn an_entering_member_must_leave_its_group_in_the_same_transition() {
     let state = state();
     let mut pull = AggregateGroupMemberDelta::new();
-    pull.upsert(name(6), carrier(6, 1), Role::Ordinary).unwrap();
+    pull.upsert(name(6), carrier(6, 1), Role::Interior).unwrap();
     let held = committed(vec![kept(10, 1, pull.clone())], BTreeSet::new());
     assert!(matches!(
         state.verify(&[held]),

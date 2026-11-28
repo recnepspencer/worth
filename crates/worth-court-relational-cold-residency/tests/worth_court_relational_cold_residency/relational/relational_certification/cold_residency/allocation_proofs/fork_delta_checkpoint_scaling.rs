@@ -104,7 +104,7 @@ fn run_fork_scaling(request: &ExecutionRequest<'_, '_>, fork_count: usize) -> Fo
                         if i == 0 {
                             AggregateMemberRole::Anchor
                         } else {
-                            AggregateMemberRole::Ordinary
+                            AggregateMemberRole::Interior
                         },
                     )
                 })

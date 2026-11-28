@@ -4,7 +4,7 @@ use crate::contracts::lineage::data::naming::PersistentNameBirthRequest;
 use crate::contracts::lineage::data::naming_denial::{
     DiscriminatorBasisDenialReason, LineageNameDenial,
 };
-use crate::lineage::authority::discriminator_scan::extract_embedded_name_refs;
+use worth_foundational::scan_name_discriminator_references;
 use crate::lineage::authority::PersistentNameMintingAuthority;
 
 use super::{entity_holder, face_registry};
@@ -23,6 +23,7 @@ fn begin_v1(identity: &str) -> Vec<u8> {
 }
 
 fn mint_expect_malformed(disc: Vec<u8>) {
+    let error = scan_name_discriminator_references(&disc).unwrap_err();
     let registry = face_registry();
     let denial = PersistentNameMintingAuthority::mint_commit_births_for_test(
         &registry,
@@ -44,14 +45,14 @@ fn mint_expect_malformed(disc: Vec<u8>) {
         LineageNameDenial::InvalidDiscriminatorBasis {
             scheme_id: "worth.cad.face.v1".to_owned(),
             role_path: "cut_piece".to_owned(),
-            reason: DiscriminatorBasisDenialReason::MalformedDiscriminator,
+            reason: DiscriminatorBasisDenialReason::MalformedDiscriminator(error),
         }
     );
 }
 
 #[test]
 fn scanner_accepts_every_canonical_tag_nested_in_pair_and_deep_option_70() {
-    assert_eq!(extract_embedded_name_refs(&[]), Ok(Vec::new()));
+    assert_eq!(scan_name_discriminator_references(&[]), Ok(Vec::new()));
 
     let ref_a = [0x11; 32];
     let ref_b = [0x22; 32];
@@ -117,7 +118,7 @@ fn scanner_accepts_every_canonical_tag_nested_in_pair_and_deep_option_70() {
     stream.push(0x30);
 
     assert_eq!(
-        extract_embedded_name_refs(&stream),
+        scan_name_discriminator_references(&stream),
         Ok(vec![ref_a, ref_b, ref_c])
     );
 
@@ -128,7 +129,7 @@ fn scanner_accepts_every_canonical_tag_nested_in_pair_and_deep_option_70() {
     deep.extend(std::iter::repeat_n(0x31_u8, 70));
     deep.push(0x17);
     deep.extend_from_slice(&123_u32.to_be_bytes());
-    assert_eq!(extract_embedded_name_refs(&deep), Ok(Vec::new()));
+    assert_eq!(scan_name_discriminator_references(&deep), Ok(Vec::new()));
 }
 
 #[test]
@@ -138,11 +139,11 @@ fn scanner_refuses_non_v1_prefix_truncation_trailing_garbage_bad_bool_and_invali
     push_len_bytes(&mut v2_smuggle, b"worth.test.v2");
     v2_smuggle.push(0x20);
     v2_smuggle.extend_from_slice(&[0xee; 32]);
-    assert_eq!(extract_embedded_name_refs(&v2_smuggle), Err(()));
+    assert!(scan_name_discriminator_references(&v2_smuggle).is_err());
     mint_expect_malformed(v2_smuggle);
 
     // Raw opaque label bytes without domain header also refuse as MalformedDiscriminator.
-    assert_eq!(extract_embedded_name_refs(b"left"), Err(()));
+    assert!(scan_name_discriminator_references(b"left").is_err());
     mint_expect_malformed(b"left".to_vec());
 
     // 2. Truncation at structural boundaries.
@@ -163,7 +164,7 @@ fn scanner_refuses_non_v1_prefix_truncation_trailing_garbage_bad_bool_and_invali
         DOMAIN_TAG.len() + 4,
         valid_nested.len() - 1,
     ] {
-        assert_eq!(extract_embedded_name_refs(&valid_nested[..cut]), Err(()));
+        assert!(scan_name_discriminator_references(&valid_nested[..cut]).is_err());
     }
     mint_expect_malformed(valid_nested[..valid_nested.len() - 1].to_vec());
 
@@ -174,12 +175,12 @@ fn scanner_refuses_non_v1_prefix_truncation_trailing_garbage_bad_bool_and_invali
     let mut incomplete_inner = vec![0x02];
     push_len_bytes(&mut incomplete_inner, b"x");
     push_len_bytes(&mut bad_nested, &incomplete_inner);
-    assert_eq!(extract_embedded_name_refs(&bad_nested), Err(()));
+    assert!(scan_name_discriminator_references(&bad_nested).is_err());
 
     // 3. Trailing garbage & unknown tag & item tag in value position.
     let mut trailing = valid_nested.clone();
     trailing.push(0xff);
-    assert_eq!(extract_embedded_name_refs(&trailing), Err(()));
+    assert!(scan_name_discriminator_references(&trailing).is_err());
     mint_expect_malformed(trailing);
 
     let mut field_in_value = begin_v1("worth.test.bad_val.v1");
@@ -187,31 +188,31 @@ fn scanner_refuses_non_v1_prefix_truncation_trailing_garbage_bad_bool_and_invali
     push_len_bytes(&mut field_in_value, b"k");
     field_in_value.push(0x02); // TAG_FIELD invalid in value position
     push_len_bytes(&mut field_in_value, b"nested");
-    assert_eq!(extract_embedded_name_refs(&field_in_value), Err(()));
+    assert!(scan_name_discriminator_references(&field_in_value).is_err());
 
     // 4. Invalid TAG_BOOL byte outside {0, 1}.
     for bad_bool in [2_u8, 255_u8] {
         let mut s = begin_v1("worth.test.bad_bool.v1");
         s.extend_from_slice(&[0x10, bad_bool]);
-        assert_eq!(extract_embedded_name_refs(&s), Err(()));
+        assert!(scan_name_discriminator_references(&s).is_err());
         mint_expect_malformed(s);
     }
 
     // 5. Invalid UTF-8 in identity, TAG_VARIANT, TAG_FIELD, and TAG_TEXT.
     let mut bad_id = DOMAIN_TAG.to_vec();
     push_len_bytes(&mut bad_id, &[0xff, 0xfe]);
-    assert_eq!(extract_embedded_name_refs(&bad_id), Err(()));
+    assert!(scan_name_discriminator_references(&bad_id).is_err());
 
     for tag in [0x01_u8, 0x19_u8] {
         let mut s = begin_v1("worth.test.bad_utf8.v1");
         s.push(tag);
         push_len_bytes(&mut s, &[0xff, 0xfe]);
-        assert_eq!(extract_embedded_name_refs(&s), Err(()));
+        assert!(scan_name_discriminator_references(&s).is_err());
     }
     let mut bad_field_utf8 = begin_v1("worth.test.bad_utf8.v1");
     bad_field_utf8.push(0x02);
     push_len_bytes(&mut bad_field_utf8, &[0xff, 0xfe]);
     bad_field_utf8.push(0x30);
-    assert_eq!(extract_embedded_name_refs(&bad_field_utf8), Err(()));
+    assert!(scan_name_discriminator_references(&bad_field_utf8).is_err());
     mint_expect_malformed(bad_field_utf8);
 }

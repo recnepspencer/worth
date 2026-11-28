@@ -202,7 +202,7 @@ fn run_post_reopen_pre_scheme_b_forks(
                         if i == 0 {
                             AggregateMemberRole::Anchor
                         } else {
-                            AggregateMemberRole::Ordinary
+                            AggregateMemberRole::Interior
                         },
                     )
                 })
@@ -257,7 +257,7 @@ fn run_post_reopen_pre_scheme_b_forks(
         Vec::new(),
         vec![vec![
             (base_names[0], AggregateMemberRole::Anchor),
-            (base_names[1], AggregateMemberRole::Ordinary),
+            (base_names[1], AggregateMemberRole::Interior),
         ]],
     );
     tx.attach_naming_plan(plan);

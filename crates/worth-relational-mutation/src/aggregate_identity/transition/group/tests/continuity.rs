@@ -39,14 +39,14 @@ const B: Role = Role::Boundary;
 #[test]
 fn anchor_rule_split_keeps_the_anchor_fragment_not_the_least_member() {
     let rule = Rule::Anchor;
-    let before: Spec<'_> = &[(7, Role::Anchor), (2, Role::Ordinary), (9, Role::Ordinary)];
+    let before: Spec<'_> = &[(7, Role::Anchor), (2, Role::Interior), (9, Role::Interior)];
     let next = agreed(
         rule,
         &[2, 4, 7, 9],
         &[before],
         &[
-            &[(2, Role::Ordinary), (9, Role::Ordinary)],
-            &[(7, Role::Anchor), (4, Role::Ordinary)],
+            &[(2, Role::Interior), (9, Role::Interior)],
+            &[(7, Role::Anchor), (4, Role::Interior)],
         ],
     );
     let (kept, split) = (group_with(&next, 7), group_with(&next, 2));
@@ -74,14 +74,14 @@ fn anchor_rule_merge_keeps_the_least_anchor_name() {
         rule,
         &[7, 4, 3, 8],
         &[
-            &[(7, Role::Anchor), (4, Role::Ordinary)],
-            &[(3, Role::Anchor), (8, Role::Ordinary)],
+            &[(7, Role::Anchor), (4, Role::Interior)],
+            &[(3, Role::Anchor), (8, Role::Interior)],
         ],
         &[&[
             (7, Role::Anchor),
-            (4, Role::Ordinary),
+            (4, Role::Interior),
             (3, Role::Anchor),
-            (8, Role::Ordinary),
+            (8, Role::Interior),
         ]],
     );
     assert_eq!(next.assignments[0].identity, id(rule, 3));
@@ -95,13 +95,13 @@ fn anchor_rule_merge_keeps_the_least_anchor_name() {
 #[test]
 fn boundary_rule_split_follows_the_most_walls_even_away_from_the_anchor() {
     let rule = Rule::Boundary;
-    let walls: Spec<'_> = &[(10, B), (11, B), (12, B), (1, Role::Ordinary)];
+    let walls: Spec<'_> = &[(10, B), (11, B), (12, B), (1, Role::Interior)];
     let next = agreed(
         rule,
         &[10, 11, 12, 1, 30],
         &[walls],
         &[
-            &[(11, B), (12, B), (1, Role::Ordinary)],
+            &[(11, B), (12, B), (1, Role::Interior)],
             &[(10, B), (30, B)],
         ],
     );
@@ -206,10 +206,10 @@ fn producer_role_rule_follows_the_producer_and_merges_to_the_least_producer() {
     let split = agreed(
         rule,
         &[50, 1, 2, 60],
-        &[&[(50, Role::Anchor), (1, Role::Ordinary), (2, Role::Ordinary)]],
+        &[&[(50, Role::Anchor), (1, Role::Interior), (2, Role::Interior)]],
         &[
-            &[(1, Role::Ordinary), (60, Role::Anchor)],
-            &[(50, Role::Anchor), (2, Role::Ordinary)],
+            &[(1, Role::Interior), (60, Role::Anchor)],
+            &[(50, Role::Anchor), (2, Role::Interior)],
         ],
     );
     assert_eq!(group_with(&split, 50).identity, id(rule, 50));
@@ -222,10 +222,10 @@ fn producer_role_rule_follows_the_producer_and_merges_to_the_least_producer() {
         rule,
         &[50, 40, 1],
         &[
-            &[(50, Role::Anchor), (1, Role::Ordinary)],
+            &[(50, Role::Anchor), (1, Role::Interior)],
             &[(40, Role::Anchor)],
         ],
-        &[&[(50, Role::Anchor), (40, Role::Anchor), (1, Role::Ordinary)]],
+        &[&[(50, Role::Anchor), (40, Role::Anchor), (1, Role::Interior)]],
     );
     assert_eq!(merged.assignments[0].identity, id(rule, 40));
     assert!(merged.lineage.contains(&Event::MergedInto {

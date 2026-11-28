@@ -102,7 +102,7 @@ fn tampered_chk24_emptying_historical_fork_after_parent_advances_refuses_corrupt
         "p0-g1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let basis_c1 = observe_branch(&producer, &main);
@@ -117,8 +117,8 @@ fn tampered_chk24_emptying_historical_fork_after_parent_advances_refuses_corrupt
         "p0-g2",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
-            (n2[0], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
+            (n2[0], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -266,7 +266,7 @@ fn unnamed_entity_at_c1_then_named_and_group_at_c2_historical_fork_survives_reop
         "g2",
         vec![vec![
             (n2[0], AggregateMemberRole::Anchor),
-            (n2[1], AggregateMemberRole::Ordinary),
+            (n2[1], AggregateMemberRole::Interior),
         ]],
     );
     let source: Arc<dyn RelationalDurableColdSource> = medium.clone();

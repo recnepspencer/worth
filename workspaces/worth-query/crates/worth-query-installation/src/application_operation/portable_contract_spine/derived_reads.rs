@@ -37,7 +37,7 @@ pub(super) fn append_relations<'a>(
             }
             _ => false,
         });
-        if closure.has_extended_expression || aggregate_consumer {
+        if closure.requires_composite_source || aggregate_consumer {
             composite.push(relation.to_owned());
         }
         for source in closure.physical {

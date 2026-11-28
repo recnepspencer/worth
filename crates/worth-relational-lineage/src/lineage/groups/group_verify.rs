@@ -139,7 +139,7 @@ impl Check<'_> {
 
         let representative = self.groups.key(GroupMemberKey {
             group,
-            role: crate::contracts::aggregate_identity::transition::group::model::AggregateMemberRole::Ordinary,
+            role: crate::contracts::aggregate_identity::transition::group::model::AggregateMemberRole::Interior,
             name: name.clone(),
         });
         let length = self.groups.members.row_key(&representative).len();

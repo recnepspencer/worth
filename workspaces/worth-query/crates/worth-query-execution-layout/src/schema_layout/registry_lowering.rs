@@ -1,11 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use worth_query_installation::facade::{
-    ApplicationRelationCrossContextPolicy, ApplicationRelationDeletionPolicy,
-    ApplicationRelationIntegrityRecord, ApplicationSchemaMember,
+    ApplicationRelationDeletionPolicy, ApplicationRelationIntegrityRecord, ApplicationSchemaMember,
     ErasedApplicationSchemaDeclaration, WorthQueryInstalledApplicationSchemaContractCatalog,
 };
-use worth_relational::facade::config::{CascadeDeletePolicy, CrossContextPolicy};
+use worth_relational::facade::config::CascadeDeletePolicy;
 use worth_relational::facade::identity::KindId;
 use worth_relational::facade::schema::{
     DeclaredAspectContractBinding, EntityKindRegistration, KindAspectContractDeclarations,
@@ -240,7 +239,7 @@ fn register_relation_to_kinds_with_contracts(
     entity_kinds: Option<&BTreeMap<String, KindId>>,
     aspects: Vec<DeclaredAspectContractBinding>,
 ) -> Result<RelationalSchemaRegistry, WorthQuerySchemaLayoutDenial> {
-    let cross_context_policy = lower_cross_context(integrity.endpoints.cross_context_policy);
+    let cross_context_policy = integrity.endpoints.cross_context_policy;
     let relation_integrity =
         lower_relation_integrity(relation, from_kind, to_kinds, integrity, entity_kinds)?;
     registry
@@ -255,18 +254,6 @@ fn register_relation_to_kinds_with_contracts(
             relation_integrity,
         })
         .map_err(relational_schema_denial)
-}
-
-pub(super) fn lower_cross_context(
-    value: ApplicationRelationCrossContextPolicy,
-) -> CrossContextPolicy {
-    match value {
-        ApplicationRelationCrossContextPolicy::AllowExplicit => CrossContextPolicy::AllowExplicit,
-        ApplicationRelationCrossContextPolicy::SchemaControlled => {
-            CrossContextPolicy::SchemaControlled
-        }
-        ApplicationRelationCrossContextPolicy::Forbid => CrossContextPolicy::Forbid,
-    }
 }
 
 fn lower_cascade_delete(value: ApplicationRelationDeletionPolicy) -> CascadeDeletePolicy {
@@ -312,13 +299,8 @@ pub(super) fn lower_application_contract_bindings(
             .map(|(entity, aspects)| {
                 let groups = values
                     .exclusion_groups(&entity)
-                    .map(|(id, members, required)| {
-                        worth_relational::facade::schema::AspectExclusionGroupDeclaration {
-                            group_id: id.to_owned(),
-                            aspects: members.clone(),
-                            required,
-                        }
-                    })
+                    .cloned()
+                    .map(Into::into)
                     .collect();
                 (
                     entity,

@@ -347,7 +347,7 @@ impl World {
         let mut plan = CommitNamingPlan::default();
         let role = |index| match index {
             0 => AggregateMemberRole::Anchor,
-            _ => AggregateMemberRole::Ordinary,
+            _ => AggregateMemberRole::Interior,
         };
         let groups = groups
             .into_iter()

@@ -247,14 +247,6 @@ fn parent_identities(
     }
 }
 
-fn persistent_subject(subject: ApplicationNameSubjectKind) -> PersistentNameSubjectKind {
-    match subject {
-        ApplicationNameSubjectKind::Entity => PersistentNameSubjectKind::Entity,
-        ApplicationNameSubjectKind::Relation => PersistentNameSubjectKind::Relation,
-        ApplicationNameSubjectKind::Group => PersistentNameSubjectKind::Group,
-    }
-}
-
 fn key_identity(key: PersistentNameKey) -> Option<PersistentNameIdentity> {
     match key {
         PersistentNameKey::Entity(identity) | PersistentNameKey::Relation(identity) => {
@@ -282,7 +274,7 @@ fn resolve_held(
     digest: [u8; 32],
 ) -> Result<HeldName, WorthQueryOutputNameDenial> {
     let key = view
-        .recorded_name(persistent_subject(subject), &digest)
+        .recorded_name(subject, &digest)
         .ok_or(WorthQueryOutputNameDenial::UnknownHeldName { subject, digest })?;
     let identity =
         key_identity(key).ok_or(WorthQueryOutputNameDenial::UnknownHeldName { subject, digest })?;

@@ -168,12 +168,7 @@ pub struct StorageLayoutConfig {
     pub scan_packet_size: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum CrossContextPolicy {
-    AllowExplicit,
-    SchemaControlled,
-    Forbid,
-}
+pub use worth_foundational::CrossContextPolicy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum CascadeDeletePolicy {

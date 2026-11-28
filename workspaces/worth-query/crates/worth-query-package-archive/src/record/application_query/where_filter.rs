@@ -85,6 +85,7 @@ fn write_operand(output: &mut dyn BinaryEncodingSink, operand: &Operand) -> Resu
             output.u8(match presence {
                 ApplicationFieldPresence::Required => 0,
                 ApplicationFieldPresence::Optional => 1,
+                ApplicationFieldPresence::Defaulted => 2,
             })
         }
         Source::Parameter {
@@ -127,6 +128,7 @@ fn decode_operand(input: &mut BinaryInput<'_>) -> Result<Operand, Denial> {
             presence: match input.u8()? {
                 0 => ApplicationFieldPresence::Required,
                 1 => ApplicationFieldPresence::Optional,
+                2 => ApplicationFieldPresence::Defaulted,
                 _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
             },
         },

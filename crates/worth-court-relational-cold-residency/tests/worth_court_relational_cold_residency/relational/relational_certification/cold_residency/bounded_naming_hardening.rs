@@ -66,7 +66,7 @@ fn tampered_chk24_dropping_branch_naming_root_refuses_corrupt_checkpoint() {
         "tamp-grp",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     let (c1, source) = capture_external_checkpoint(request, &producer);
@@ -131,7 +131,7 @@ fn isolated_member_groups_damage_refuses_before_append_and_live_names_is_fallibl
             let role = if i == 0 {
                 AggregateMemberRole::Anchor
             } else {
-                AggregateMemberRole::Ordinary
+                AggregateMemberRole::Interior
             };
             (n, role)
         })
@@ -253,7 +253,7 @@ fn cold_reopen_retained_historical_fork_preserves_names_and_groups_at_cutoff() {
         "hf-g1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let (c1, source) = capture_external_checkpoint(request, &producer);
@@ -275,7 +275,7 @@ fn cold_reopen_retained_historical_fork_preserves_names_and_groups_at_cutoff() {
         "hf-g2",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n3[0], AggregateMemberRole::Ordinary),
+            (n3[0], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -328,8 +328,8 @@ fn cold_reopen_retained_historical_fork_preserves_names_and_groups_at_cutoff() {
         "hf-fork-g",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
-            (nf[0], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
+            (nf[0], AggregateMemberRole::Interior),
         ]],
     );
 

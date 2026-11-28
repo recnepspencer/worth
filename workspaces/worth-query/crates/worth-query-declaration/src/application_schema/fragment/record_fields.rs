@@ -28,10 +28,8 @@ pub trait Columns<Row, Set: BindingSet, Kinds> {
 
 fn path(prefix: &str, name: &str) -> Result<String, RecordRefusal> {
     if name == super::record_presence::COLUMN
-        || name.is_empty()
-        || name
-            .chars()
-            .any(|c| c.is_control() || c.is_whitespace() || matches!(c, '.' | '[' | ']'))
+        || !worth_foundational::is_valid_simple_identifier(name)
+        || name.contains(['[', ']'])
     {
         return Err(RecordRefusal::new(
             &format!("{prefix}.{name}"),

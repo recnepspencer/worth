@@ -8,9 +8,8 @@
 use worth_query_declaration::facade::application_naming::{
     AdmittedNameReferences, ApplicationNameSubjectKind, RecordedNameBirth,
 };
-use worth_query_declaration::persistent_name_admission_authority::{
-    admit_recorded_birth, recorded_discriminator_references,
-};
+use worth_query_declaration::facade::application_naming::scan_name_discriminator_references;
+use worth_query_declaration::persistent_name_admission_authority::admit_recorded_birth;
 use worth_relational::facade::lineage::{PersistentNameKey, PersistentNameSubjectKind};
 
 use super::{verify_resolved_subject, RecordedNames, RequestedSubject};
@@ -50,9 +49,8 @@ pub(crate) fn admit_birth_of<K>(
             Ok(*recorded.digest())
         })
         .collect::<Result<Vec<_>, ExecutionNameReadDenial>>()?;
-    // Malformed recorded bytes admit nothing; a typed decode refuses them.
-    let references = recorded_discriminator_references(parts.canonical_discriminator())
-        .unwrap_or_default()
+    let references = scan_name_discriminator_references(parts.canonical_discriminator())
+        .map_err(ExecutionNameReadDenial::MalformedDiscriminator)?
         .into_iter()
         .filter_map(|digest| Some((digest, admitted_reference(names, &digest)?)))
         .collect::<AdmittedNameReferences>();
@@ -78,14 +76,6 @@ fn admitted_reference(
     SUBJECT_KINDS.iter().find_map(|kind| {
         let key = names.recorded_name(*kind, digest)?;
         let (installed, subject) = names.scheme_subject(names.scheme_of(key)?)?;
-        (installed == *kind).then(|| (application_subject(installed), subject))
+        (installed == *kind).then(|| (installed, subject))
     })
-}
-
-const fn application_subject(kind: PersistentNameSubjectKind) -> ApplicationNameSubjectKind {
-    match kind {
-        PersistentNameSubjectKind::Entity => ApplicationNameSubjectKind::Entity,
-        PersistentNameSubjectKind::Relation => ApplicationNameSubjectKind::Relation,
-        PersistentNameSubjectKind::Group => ApplicationNameSubjectKind::Group,
-    }
 }

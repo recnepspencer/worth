@@ -3,13 +3,12 @@ use super::{WorthQueryName, WorthQuerySameCommitName};
 
 /// Canonical domain prefix separating encoded name discriminators from all
 /// other canonical byte streams.
-pub const NAME_DISCRIMINATOR_DOMAIN_TAG: &[u8] = b"worth.query.name-discriminator.v1\0";
+pub use worth_foundational::NAME_DISCRIMINATOR_DOMAIN_TAG;
 
 mod decode_values;
 mod decoder;
 mod field;
 mod nested;
-mod references;
 mod wire_bound;
 
 pub use decode_values::ApplicationNameDiscriminatorValueDecode;
@@ -20,7 +19,6 @@ pub use decoder::{
 };
 pub use field::ApplicationNameDiscriminatorField;
 pub use nested::NestedDiscriminator;
-pub(crate) use references::recorded_name_references;
 pub(crate) use wire_bound::discriminator_fits_structural_identity;
 pub use wire_bound::{
     bound_max, bound_sum, field_bound, max_encoded_bytes, variant_bound,

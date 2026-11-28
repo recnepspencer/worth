@@ -91,7 +91,7 @@ pub fn lower_descriptor(
             )?,
             execution_point,
             groups: InvariantGroupSet::from_mask(installed_group_mask(installed.required_groups())),
-            cost_class: installed_cost(installed.cost_posture()),
+            cost_class: installed.cost_posture(),
             failure_effect: installed_enforcement(installed.enforcement()),
             access: lower_access_contract(installed, layout, reads_program_activation)?,
         },
@@ -153,18 +153,6 @@ fn installed_group_mask(
             App::RelationIntegrity => Rel::RelationIntegrity.mask(),
         }
     })
-}
-
-fn installed_cost(
-    cost: worth_query_declaration::facade::application_schema::ApplicationInvariantCostPosture,
-) -> worth_relational::facade::runtime::InvariantCostClass {
-    use worth_query_declaration::facade::application_schema::ApplicationInvariantCostPosture as App;
-    use worth_relational::facade::runtime::InvariantCostClass as Rel;
-    match cost {
-        App::Touched => Rel::Touched,
-        App::Partition => Rel::Partition,
-        App::Global => Rel::Global,
-    }
 }
 
 fn installed_enforcement(

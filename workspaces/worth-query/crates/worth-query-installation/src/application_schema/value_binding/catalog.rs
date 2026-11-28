@@ -135,17 +135,11 @@ impl WorthQueryInstalledApplicationValueBindingCatalog {
         &'a self,
         entity: &str,
     ) -> impl Iterator<
-        Item = (
-            &'a str,
-            &'a std::collections::BTreeSet<worth_foundational::facade::AspectKey>,
-            bool,
-        ),
-    > + 'a {
-        self.exclusion_groups
-            .get(entity)
-            .into_iter()
-            .flatten()
-            .map(|group| (group.group_id.as_str(), &group.aspects, group.required))
+        Item = &'a worth_foundational::AspectExclusionGroupSpec<
+            std::collections::BTreeSet<worth_foundational::AspectKey>,
+        >,
+    > + use<'a> {
+        self.exclusion_groups.get(entity).into_iter().flatten()
     }
 
     pub fn fragments(&self) -> &FragmentCatalog {

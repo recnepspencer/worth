@@ -306,7 +306,6 @@ fn uniqueness_scope_label(scope: UniquenessScope) -> &'static str {
     match scope {
         UniquenessScope::DirectedSemanticEdge => "directed",
         UniquenessScope::NormalizedSymmetricEdge => "normalized",
-        _ => unreachable!("unhandled Relational contract variant"),
     }
 }
 

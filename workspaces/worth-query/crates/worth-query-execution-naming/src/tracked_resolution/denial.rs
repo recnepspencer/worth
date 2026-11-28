@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use worth_query_declaration::facade::application_naming::{NameResolutionDenial, NoNameOwner};
+use worth_query_declaration::facade::application_naming::{DiscriminatorScanError, NameResolutionDenial, NoNameOwner};
 use worth_relational::facade::lineage::{
     LineageRecordTarget, PersistentNameSubjectKind, RelationalPersistentNameReadDenial,
 };
@@ -37,6 +37,8 @@ pub enum ExecutionNameReadDenial {
     /// The held name has no birth recorded and visible at the reader's
     /// basis: it is born later, on another branch, or never.
     UnknownName,
+    /// A recorded birth carries malformed discriminator bytes.
+    MalformedDiscriminator(DiscriminatorScanError),
     /// A recorded birth's parent is not recorded at the reader's basis.
     UnrecordedBirthReference { digest: [u8; 32] },
     /// A birth looked up by its parts references a name only its own
@@ -80,6 +82,7 @@ impl fmt::Display for ExecutionNameReadDenial {
             Self::UnknownName => {
                 formatter.write_str("no birth of this name is recorded at this basis")
             }
+            Self::MalformedDiscriminator(error) => error.fmt(formatter),
             Self::UnrecordedBirthReference { .. } => {
                 formatter.write_str("a recorded birth's parent is not recorded at this basis")
             }

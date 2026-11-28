@@ -4,17 +4,15 @@
 
 use std::collections::BTreeMap;
 
-use worth_query_declaration::facade::application_naming::{
-    ApplicationGroupContinuityRule, ApplicationGroupMemberRole, ApplicationNameSubjectKind,
-};
+use worth_query_declaration::facade::application_naming::ApplicationNameSubjectKind;
 use worth_query_installation::facade::{
     InstalledGroupNameSchemeLayout, InstalledNameSchemeCatalog, InstalledNameSchemeLayout,
 };
 use worth_relational::facade::aggregate_identity::{
-    AggregateContinuityRule, AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
+    AggregateGroupScheme, AggregateGroupSchemeId, AggregateMemberRole,
 };
 use worth_relational::facade::lineage::{
-    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry, PersistentNameSubjectKind,
+    InstalledPersistentNameScheme, InstalledPersistentNameSchemeRegistry,
 };
 
 use crate::denial::ExecutionNamingDenial;
@@ -52,11 +50,7 @@ impl LoweredExecutionGroupScheme {
 
     pub fn relational_member_role(&self, declared_role: &str) -> Option<AggregateMemberRole> {
         self.layout.name_scheme().role_rank(declared_role)?;
-        Some(match self.layout.member_role(declared_role) {
-            ApplicationGroupMemberRole::Ordinary => AggregateMemberRole::Ordinary,
-            ApplicationGroupMemberRole::Anchor => AggregateMemberRole::Anchor,
-            ApplicationGroupMemberRole::Boundary => AggregateMemberRole::Boundary,
-        })
+        Some(self.layout.member_role(declared_role))
     }
 }
 
@@ -87,7 +81,7 @@ impl LoweredExecutionNameSchemeCatalog {
         let mut group_by_subject = BTreeMap::new();
 
         for layout in catalog.schemes() {
-            let relational_scheme = lower_entity_or_relation_scheme(layout)?;
+            let relational_scheme = lower_persistent_name_scheme(layout)?;
             relational_registry
                 .register(relational_scheme)
                 .map_err(|detail| ExecutionNamingDenial::SchemeLowering {
@@ -106,7 +100,7 @@ impl LoweredExecutionNameSchemeCatalog {
             let scheme_id = lowered.scheme_id().to_owned();
             // Relational records each group's scheme, so a group read is
             // kind-verified exactly like an entity or relation read.
-            let group_subject = lower_entity_or_relation_scheme(group_layout.name_scheme())?;
+            let group_subject = lower_persistent_name_scheme(group_layout.name_scheme())?;
             let group_name = lowered.group_name().to_owned();
             if installed_schemes.contains_key(&scheme_id) || group_schemes.contains_key(&scheme_id)
             {
@@ -164,17 +158,12 @@ impl LoweredExecutionNameSchemeCatalog {
     }
 }
 
-fn lower_entity_or_relation_scheme(
+fn lower_persistent_name_scheme(
     layout: &InstalledNameSchemeLayout,
 ) -> Result<InstalledPersistentNameScheme, ExecutionNamingDenial> {
-    let subject_kind = match layout.subject_kind() {
-        ApplicationNameSubjectKind::Entity => PersistentNameSubjectKind::Entity,
-        ApplicationNameSubjectKind::Relation => PersistentNameSubjectKind::Relation,
-        ApplicationNameSubjectKind::Group => PersistentNameSubjectKind::Group,
-    };
     InstalledPersistentNameScheme::try_from_ordered_roles_for_subject(
         layout.scheme_id(),
-        subject_kind,
+        layout.subject_kind(),
         layout.subject_name(),
         layout.role_order(),
         layout.split_capable(),
@@ -196,13 +185,8 @@ fn lower_group_scheme(
             detail: format!("invalid aggregate group scheme id: {denial:?}"),
         }
     })?;
-    let continuity_rule = match layout.continuity_rule() {
-        ApplicationGroupContinuityRule::Anchor => AggregateContinuityRule::Anchor,
-        ApplicationGroupContinuityRule::Boundary => AggregateContinuityRule::Boundary,
-        ApplicationGroupContinuityRule::ProducerRole => AggregateContinuityRule::ProducerRole,
-    };
     Ok(LoweredExecutionGroupScheme {
         layout: layout.clone(),
-        relational_scheme: AggregateGroupScheme::new(scheme_id, continuity_rule),
+        relational_scheme: AggregateGroupScheme::new(scheme_id, layout.continuity_rule()),
     })
 }
