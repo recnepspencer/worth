@@ -38,7 +38,8 @@ pub(crate) fn entity_deletion_publication_patch(
         detail,
         authoritative_patch.map(MutationAspectPatch::from_ordinary),
     )?
-    .published_patch)
+    .published
+    .authoritative_patch)
 }
 
 pub(crate) fn relation_deletion_publication_patch(
@@ -52,7 +53,9 @@ pub(crate) fn relation_deletion_publication_patch(
 ) -> Result<PublishedAuthoritativePatch, CommitConflict> {
     let delta = evaluate_relation_deletion_state(plans, id, kind_id, source, target, state)
         .map_err(|error| error.to_commit_conflict())?;
-    Ok(canonical_publication_fragment(&delta, detail, None)?.published_patch)
+    Ok(canonical_publication_fragment(&delta, detail, None)?
+        .published
+        .authoritative_patch)
 }
 
 pub mod codec_expectation;

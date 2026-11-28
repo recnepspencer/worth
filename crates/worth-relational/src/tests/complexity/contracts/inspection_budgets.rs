@@ -1,10 +1,8 @@
 use crate::facade::inspection::{
     ConnectivityInspectionRequest, GraphInspectionRequest, InspectionRecordClass, InspectionScope,
     KindInspectionRequest, RecentCommitInspectionRequest, RetentionInspectionRequest,
-    StructuralIdentityQueryRequest,
 };
 use crate::identity::data::KindId;
-use crate::symbols::data::Symbol;
 use crate::tests::support::*;
 
 #[test]
@@ -58,54 +56,6 @@ fn complexity_budget_graph_summary_reports_explicit_inspection_work() {
     );
     assert_eq!(counters.visibility_entity_slot_scans, 0);
     assert_eq!(counters.visibility_relation_slot_scans, 0);
-}
-
-#[test]
-fn complexity_budget_structural_identity_distinguishes_direct_lookup_from_broad_query() {
-    let host_request = crate::test_execution_policy::serial_request();
-    let execution = &worth_execution::ExecutionRequest::serial(&host_request);
-
-    let runtime = runtime_with_test_schema();
-    let entity = create_entity(execution, &runtime, "alpha");
-    let _other = create_entity(execution, &runtime, "beta");
-
-    runtime.performance_access().reset_counters();
-    let direct = runtime
-        .inspect_what_happened()
-        .structural_identity(
-            execution,
-            InspectionScope::Current,
-            crate::facade::transactions::RecordRef::Entity(entity),
-        )
-        .expect("read request remains live");
-    let direct_counters = runtime.performance_access().counters();
-
-    assert!(direct.is_some());
-    assert_eq!(direct_counters.inspection_structural_identity_lookups, 1);
-    assert_eq!(
-        direct_counters.inspection_structural_identity_query_scans,
-        0
-    );
-    assert_eq!(direct_counters.visibility_entity_slot_scans, 0);
-
-    runtime.performance_access().reset_counters();
-    let broad = runtime
-        .inspect_what_happened()
-        .query_structural_identity(
-            execution,
-            &StructuralIdentityQueryRequest {
-                scope: InspectionScope::Current,
-                partition_scope: None,
-                fingerprint_family: Symbol(1),
-            },
-        )
-        .expect("read request remains live");
-    let broad_counters = runtime.performance_access().counters();
-
-    assert!(broad.is_empty());
-    assert_eq!(broad_counters.inspection_structural_identity_query_scans, 1);
-    assert!(broad_counters.inspection_structural_identity_lookups >= 2);
-    assert!(broad_counters.visible_authoritative_entity_records_materialized >= 2);
 }
 
 #[test]

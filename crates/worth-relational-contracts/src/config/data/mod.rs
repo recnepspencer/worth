@@ -19,6 +19,6 @@ pub use provenance::{ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource}
 pub use residency_budget::ResidencyBudget;
 pub use runtime_config::RelationalRuntimeConfig;
 pub use sections::{
-    CommitStrategiesConfig, DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig,
-    IdentityConfig, PublicationRuntimeConfig, SchemaConfig, StorageConfig, VisibilityConfig,
+    DiagnosticsConfig, DurabilityConfig, ExecutionConfig, HistoryConfig, IdentityConfig,
+    PublicationRuntimeConfig, SchemaConfig, StorageConfig, VisibilityConfig,
 };

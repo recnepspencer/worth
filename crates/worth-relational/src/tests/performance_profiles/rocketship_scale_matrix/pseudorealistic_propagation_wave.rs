@@ -147,7 +147,6 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_propagation_wave(
                         "publication_history_publish_micros": hot_phase_timing.publication_history_publish_micros,
                         "publication_visibility_pin_micros": hot_phase_timing.publication_visibility_pin_micros,
                         "publication_bundle_publish_micros": hot_phase_timing.publication_bundle_publish_micros,
-                        "publication_post_commit_consumer_micros": hot_phase_timing.publication_post_commit_consumer_micros,
                     },
                     "propagation_planning_micros": propagation_planning_micros,
                     "propagation_execution_micros": propagation_execution_micros,
@@ -205,10 +204,6 @@ pub(super) fn certify_hundred_k_nodes_pseudorealistic_propagation_wave(
             (
                 "publication_bundle_publish_micros",
                 &["phase_timing", "publication_bundle_publish_micros"],
-            ),
-            (
-                "publication_post_commit_consumer_micros",
-                &["phase_timing", "publication_post_commit_consumer_micros"],
             ),
             (
                 "propagation_planning_micros",

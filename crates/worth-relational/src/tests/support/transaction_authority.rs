@@ -1,5 +1,4 @@
 use super::{BranchId, RelationalRuntime, RelationalTransactionValidationInput};
-use crate::facade::commit_strategies::CommitStrategiesAuthorityFacade;
 use crate::mvcc::BranchBoundRelationalTransaction;
 
 /// Observe the configured main identity explicitly and return its owner basis.
@@ -42,22 +41,6 @@ pub(crate) fn test_owner_begin_transaction_for_branch(
     runtime
         .begin_branch_transaction(&basis, crate::mvcc::RelationalTransactionIntent::ordinary())
         .expect("branch basis belongs to its issuing runtime")
-}
-
-/// Obtain an owner-issued strategy target and the mutable strategy authority
-/// without overlapping the immutable binding lookup with the authority borrow.
-pub(crate) fn test_owner_strategy_authority(
-    runtime: &RelationalRuntime,
-    target_branch: Option<BranchId>,
-) -> (
-    RelationalTransactionValidationInput,
-    CommitStrategiesAuthorityFacade,
-) {
-    let options = target_branch
-        .map(|branch| test_owner_transaction_validation_input_for_branch(runtime, branch))
-        .unwrap_or_else(|| test_owner_transaction_validation_input_for_main(runtime));
-    let authority = runtime.commit_strategies_authority();
-    (options, authority)
 }
 
 /// Obtain owner-private validation input through the runtime's identity door.

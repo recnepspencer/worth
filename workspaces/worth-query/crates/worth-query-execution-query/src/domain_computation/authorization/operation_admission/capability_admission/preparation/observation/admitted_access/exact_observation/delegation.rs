@@ -268,7 +268,6 @@ execution: &worth_execution::ExecutionRequest<'_, '_>,
             installed.grant_kind(),
             installed.grant_kind(),
             [path],
-            [],
         )
         .map_err(|_| rejected(installed))?;
         let evidence = self

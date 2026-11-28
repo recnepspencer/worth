@@ -1,8 +1,5 @@
-use worth_foundational::facade::AspectFieldLocator;
-
 use crate::contracts::identity::data::primitives::KindId;
 use crate::contracts::identity::data::record_ids::EntityId;
-use crate::contracts::transactions::data::primitives::RecordRef;
 use worth_relational_branch::internal_port::snapshots::data::SnapshotHandle;
 
 use super::{
@@ -155,36 +152,6 @@ impl RelationalAuthorizationPathPlan {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct RelationalAuthorizationEffectTarget {
-    record: RecordRef,
-    field: Option<AspectFieldLocator>,
-}
-
-impl RelationalAuthorizationEffectTarget {
-    pub fn record(record: RecordRef) -> Self {
-        Self {
-            record,
-            field: None,
-        }
-    }
-
-    pub fn field(record: RecordRef, field: AspectFieldLocator) -> Self {
-        Self {
-            record,
-            field: Some(field),
-        }
-    }
-
-    pub const fn record_ref(&self) -> &RecordRef {
-        &self.record
-    }
-
-    pub fn field_locator(&self) -> Option<&AspectFieldLocator> {
-        self.field.as_ref()
-    }
-}
-
 #[derive(Debug)]
 pub struct RelationalAuthorizationObservationPlan {
     snapshot: SnapshotHandle,
@@ -193,7 +160,6 @@ pub struct RelationalAuthorizationObservationPlan {
     principal_kind: KindId,
     scope_kind: KindId,
     paths: Vec<RelationalAuthorizationPathPlan>,
-    proposed_effects: Vec<RelationalAuthorizationEffectTarget>,
 }
 
 impl RelationalAuthorizationObservationPlan {
@@ -204,7 +170,6 @@ impl RelationalAuthorizationObservationPlan {
         principal_kind: KindId,
         scope_kind: KindId,
         paths: impl IntoIterator<Item = RelationalAuthorizationPathPlan>,
-        proposed_effects: impl IntoIterator<Item = RelationalAuthorizationEffectTarget>,
     ) -> Result<Self, RelationalAuthorizationPlanDenial> {
         Self::try_new_owned(
             snapshot,
@@ -213,7 +178,6 @@ impl RelationalAuthorizationObservationPlan {
             principal_kind,
             scope_kind,
             paths.into_iter().collect(),
-            proposed_effects.into_iter().collect(),
         )
     }
 
@@ -225,7 +189,6 @@ impl RelationalAuthorizationObservationPlan {
         principal_kind: KindId,
         scope_kind: KindId,
         paths: Vec<RelationalAuthorizationPathPlan>,
-        proposed_effects: Vec<RelationalAuthorizationEffectTarget>,
     ) -> Result<Self, RelationalAuthorizationPlanDenial> {
         let plan = Self {
             snapshot,
@@ -234,7 +197,6 @@ impl RelationalAuthorizationObservationPlan {
             principal_kind,
             scope_kind,
             paths,
-            proposed_effects,
         };
         validate_plan(&plan)?;
         Ok(plan)
@@ -262,9 +224,5 @@ impl RelationalAuthorizationObservationPlan {
 
     pub fn paths(&self) -> &[RelationalAuthorizationPathPlan] {
         &self.paths
-    }
-
-    pub fn proposed_effects(&self) -> &[RelationalAuthorizationEffectTarget] {
-        &self.proposed_effects
     }
 }

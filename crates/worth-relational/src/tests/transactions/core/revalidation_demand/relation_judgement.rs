@@ -31,12 +31,6 @@ fn relation_demand_judges_exact_nonzero_slot_under_proposed_rules_without_rewrit
     assert_eq!(transaction.footprint().writes().len(), 0);
     assert!(transaction.footprint().reads().any(|read| matches!(read,
         crate::mvcc::RelationalTransactionReadLocus::Existing(crate::transactions::data::RecordRef::Relation(id)) if *id == good)));
-    let planned = transaction
-        .plan_bulk_mutation_batch(&runtime)
-        .unwrap()
-        .unwrap();
-    assert_eq!(planned.locality.relation_target_count, 1);
-    assert_eq!(planned.locality.entity_target_count, 0);
     let inspected = transaction.inspect_staging();
     assert_eq!(inspected.intent_counts.relation_revalidation_count, 1);
     assert_eq!(inspected.intent_counts.relation_mutation_count, 0);

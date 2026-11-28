@@ -4,7 +4,6 @@ pub mod authority;
 pub mod branch;
 pub mod canonical_basis_ready_sequence;
 pub mod change_source;
-pub mod commit_strategies;
 pub mod config;
 pub mod content;
 pub mod derived_relation;

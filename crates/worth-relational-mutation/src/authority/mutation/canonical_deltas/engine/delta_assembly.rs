@@ -1,3 +1,4 @@
+use super::super::binding_evidence::evaluate_authoritative_binding_delta;
 use smallvec::SmallVec;
 
 use crate::contracts::publication::patch::data::aspect_key_ordering::ordered_aspect_keys;
@@ -9,7 +10,6 @@ use crate::authority::mutation::canonical_deltas::data::{
     BindingEvaluationContext, CanonicalDeltaError, CanonicalRecordAspectDelta,
     EvaluatedAspectBinding,
 };
-use crate::authority::mutation::canonical_deltas::materialized_state::evaluate_authoritative_binding_delta;
 
 pub(super) fn assemble_delta(
     target: RecordRef,

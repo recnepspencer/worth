@@ -1,7 +1,7 @@
 use super::authority_context::AuthoritativeCommitContext;
 use super::bulk_mutation_telemetry::record_bulk_mutation_telemetry;
 use super::publication_validation::{CommitPublicationValidationInput, DraftValidationInput};
-use super::rejection::stale_strategy_validation_basis;
+use super::rejection::stale_proposal_validation_basis;
 use crate::runtime::state::subsystems::history::history_preparation_binding::RelationalPreparationHistory;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
 use contracts::transactions::data::commit_log::CommitLog;
@@ -42,7 +42,6 @@ pub struct AdmittedCommitState<V = CommitPublicationValidationInput> {
     commit_log: CommitLog,
     authority_input: crate::authority::commit::semantic_plan::PreparedRelationalCommitPlan,
     prevalidated_invariants: Option<mutation::validation::engine::result::InvariantExecutionResult>,
-    strategy_commit_artifacts: Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
     diagnostics: Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
     complexity_before:
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
@@ -126,19 +125,12 @@ impl<V> AdmittedCommitState<V> {
         &mut self.phase_timing
     }
 
-    pub(super) fn strategy_artifacts(
-        &self,
-    ) -> Option<&contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>{
-        self.strategy_commit_artifacts.as_ref()
-    }
-
     pub(super) fn into_result_parts(
         self,
     ) -> (
         TransactionId,
         CommitPhaseTiming,
         CommitLog,
-        Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
         contracts::performance::data::runtime_complexity_counters::RuntimeComplexityCounters,
@@ -147,7 +139,6 @@ impl<V> AdmittedCommitState<V> {
             self.transaction_id,
             self.phase_timing,
             self.commit_log,
-            self.strategy_commit_artifacts,
             self.diagnostics,
             self.complexity_before,
             self.prior_complexity_delta,
@@ -183,7 +174,7 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
     context: AuthoritativeCommitContext<V>,
 ) -> Result<AdmittedCommitExecution<V>, TransactionCommitError> {
     let complexity_before = inputs.instrumentation.complexity_snapshot();
-    enforce_validated_strategy_basis(
+    enforce_validated_proposal_basis(
         &inputs,
         context.transaction_id,
         context.validation_input.basis(),
@@ -214,7 +205,6 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
             commit_log: CommitLog::new(),
             authority_input: context.authority_input,
             prevalidated_invariants: context.prevalidated_invariants,
-            strategy_commit_artifacts: context.strategy_commit_artifacts,
             diagnostics: Vec::new(),
             complexity_before,
             prior_complexity_delta: context.prior_complexity_delta,
@@ -222,7 +212,7 @@ pub(super) fn admit_commit_execution<V: DraftValidationInput>(
     })
 }
 
-fn enforce_validated_strategy_basis(
+fn enforce_validated_proposal_basis(
     inputs: &CommitExecutionAdmission<'_>,
     transaction_id: TransactionId,
     basis: &worth_relational_branch::internal_port::branch::basis::AdmittedRelationalBranchBasis,
@@ -248,18 +238,18 @@ fn enforce_validated_strategy_basis(
             || identity.branch_observation() != basis.reference()
             || identity.branch_version() != basis.truth_version())
     {
-        return Err(stale_strategy_validation_basis(
+        return Err(stale_proposal_validation_basis(
             "proposal identity does not match the owner-issued transaction basis",
         ));
     }
     if !basis.is_current() {
-        return Err(stale_strategy_validation_basis(
+        return Err(stale_proposal_validation_basis(
             "transaction branch binding is no longer current",
         ));
     }
     if let Some(validated_branch_version) = validated_against_branch_version {
         let Some(cell) = inputs.history.branch_cell(&branch) else {
-            return Err(stale_strategy_validation_basis(
+            return Err(stale_proposal_validation_basis(
                 "validated transaction branch is no longer registered",
             ));
         };
@@ -267,7 +257,7 @@ fn enforce_validated_strategy_basis(
             || cell.observation() != *basis.reference()
             || cell.truth_version() != validated_branch_version
         {
-            return Err(stale_strategy_validation_basis(
+            return Err(stale_proposal_validation_basis(
                 "validated transaction no longer matches the current branch reference",
             ));
         }
@@ -278,8 +268,8 @@ fn enforce_validated_strategy_basis(
     if validated_against_commit_id.is_some()
         && current_commit.as_ref().map(|commit| commit.commit_id()) != validated_against_commit_id
     {
-        return Err(stale_strategy_validation_basis(
-            "validated strategy plan no longer matches the current committed commit basis",
+        return Err(stale_proposal_validation_basis(
+            "validated proposal no longer matches the current committed commit basis",
         ));
     }
     Ok(())
@@ -293,15 +283,15 @@ fn validate_version_basis(
         return Ok(());
     };
     let Some(observed) = current_version else {
-        return Err(stale_strategy_validation_basis(
+        return Err(stale_proposal_validation_basis(
             "owner-issued branch binding has no exact local version basis",
         ));
     };
     (validated_version == observed)
         .then_some(())
         .ok_or_else(|| {
-            stale_strategy_validation_basis(
-                "validated strategy plan no longer matches the current committed version basis",
+            stale_proposal_validation_basis(
+                "validated proposal no longer matches the current committed version basis",
             )
         })
 }

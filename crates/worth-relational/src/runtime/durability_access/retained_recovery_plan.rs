@@ -57,8 +57,7 @@ pub(super) fn retained_recovery_plan(
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
         runtime.durability.cold_source(),
-    )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    );
     if covered.0 > 0 && runtime.durability.transition_history().is_none() {
         plan.retain_transition_prefix(Some(std::sync::Arc::new(
             runtime

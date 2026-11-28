@@ -99,14 +99,8 @@ fn fragment(
 ) -> worth_relational_mutation::internal_port::authority::mutation::canonical_deltas::patch_fragments::FoundationalPatchFragment{
     let record = patch_record(raw_entity_id, structural_change);
     worth_relational_mutation::internal_port::authority::mutation::canonical_deltas::patch_fragments::FoundationalPatchFragment {
-        target: record.target,
-        structural_change: record.structural_change,
-        relation_birth: record.relation_birth,
+        published: record,
         patch: worth_foundational::facade::AuthoritativeRecordAspectPatch::empty(),
-        published_patch: record.authoritative_patch,
-        semantic_changes: record.semantic_changes,
-        contains_opaque_aspect: record.contains_opaque_aspect,
-        detail: record.detail,
     }
 }
 

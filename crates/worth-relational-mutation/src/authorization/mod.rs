@@ -27,10 +27,9 @@ pub use evidence::{
     RelationalAuthorizationPathWitness,
 };
 pub use plan::{
-    RelationalAuthorizationEffectTarget, RelationalAuthorizationObservationPlan,
-    RelationalAuthorizationPathCloneStop, RelationalAuthorizationPathPlan,
-    RelationalAuthorizationPlanAdmissionStop, RelationalAuthorizationTraversal,
-    RelationalAuthorizationTraversalDirection,
+    RelationalAuthorizationObservationPlan, RelationalAuthorizationPathCloneStop,
+    RelationalAuthorizationPathPlan, RelationalAuthorizationPlanAdmissionStop,
+    RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
 };
 
 pub use constraint::{

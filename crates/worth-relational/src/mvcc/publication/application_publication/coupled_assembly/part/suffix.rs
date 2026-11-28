@@ -121,7 +121,6 @@ impl RelationalAuthoredCoupledCandidate<'_> {
             &mut self.mutation.identities.symbols,
             crate::authority::mutation::BranchLocalDeleteAllowance::default(),
             &mut self.mutation.identities.records,
-            crate::authority::commit::pipeline::request_lease(execution),
             runtime.commit_work_budget.clone(),
             Some(&deferred_edges),
         )

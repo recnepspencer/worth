@@ -2,10 +2,6 @@ use std::collections::BTreeMap;
 
 use crate::config::data::*;
 
-pub mod commit_strategy_registration_digest;
-
-use commit_strategy_registration_digest::commit_strategy_registration_set_digest_hex;
-
 pub(super) fn apply_config_overrides(
     config: &mut RelationalRuntimeConfig,
     overrides: &RelationalConfigOverride,
@@ -15,7 +11,6 @@ pub(super) fn apply_config_overrides(
     apply_diagnostics_overrides(config, overrides, provenance);
     apply_history_overrides(config, overrides, provenance);
     apply_schema_overrides(config, overrides, provenance);
-    apply_commit_strategy_overrides(config, overrides, provenance);
     apply_identity_overrides(config, overrides, provenance);
     apply_storage_overrides(config, overrides, provenance);
     apply_visibility_overrides(config, overrides, provenance);
@@ -129,32 +124,6 @@ fn apply_identity_overrides(
     }
     if let Some(symbol_table) = &section.symbol_table {
         config.identity.symbol_table = symbol_table.clone();
-    }
-}
-
-fn apply_commit_strategy_overrides(
-    config: &mut RelationalRuntimeConfig,
-    override_tree: &RelationalConfigOverride,
-    provenance: &mut BTreeMap<String, ConfigProvenanceEntry>,
-) {
-    let section = &override_tree.commit_strategies;
-    if let Some(registrations) = &section.registrations {
-        config.commit_strategies.registrations = registrations.clone();
-        provenance.insert(
-            "commit_strategies.registrations".to_string(),
-            ConfigProvenanceEntry {
-                source: ConfigValueSource::BuilderOverride,
-                detail: commit_strategy_override_detail(registrations),
-            },
-        );
-    } else {
-        provenance.insert(
-            "commit_strategies.registrations".to_string(),
-            ConfigProvenanceEntry {
-                source: ConfigValueSource::ProfileDefault,
-                detail: commit_strategy_override_detail(&config.commit_strategies.registrations),
-            },
-        );
     }
 }
 
@@ -293,14 +262,4 @@ fn provenance_entry(overridden: bool) -> ConfigProvenanceEntry {
             detail: "resolved from runtime profile".to_string(),
         }
     }
-}
-
-fn commit_strategy_override_detail(
-    registrations: &[crate::commit_strategies::data::registration::CommitStrategyRegistration],
-) -> String {
-    let digest = commit_strategy_registration_set_digest_hex(registrations);
-    format!(
-        "commit strategy registrations resolved; count={}; descriptor_set_digest={digest}",
-        registrations.len()
-    )
 }

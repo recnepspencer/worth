@@ -92,9 +92,7 @@ pub struct VersionNode {
 
 pub use canonical_commit_envelope::{CanonicalEnvelopeSeed, CanonicalEnvelopeWire};
 
-pub use canonical_commit_envelope::{
-    CodecDeclarationsReadmissionMemory, StrategyReadmissionMemory,
-};
+pub use canonical_commit_envelope::CodecDeclarationsReadmissionMemory;
 
 pub use canonical_commit_envelope::EnvelopeProjection;
 

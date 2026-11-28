@@ -32,8 +32,8 @@ pub(super) fn prepare<'state>(
                             ),
                         ))
                     })?;
-                    let plan = plan_invariant_execution_checked(
-                        runtime, execution, request, child, &meter, stage,
+                    let plan = plan_invariant_execution(
+                        runtime, execution, request, Some(child), Some(&meter), stage,
                     );
                     context
                         .account_completed_work(meter.charged_work())

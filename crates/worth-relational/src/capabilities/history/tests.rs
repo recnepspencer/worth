@@ -100,7 +100,6 @@ fn commit_envelope(commit_id: u64, version_id: u64) -> CanonicalCommitEnvelope {
         },
         BranchId("main".to_string()),
         CanonicalCommitAuthorityKind::VersionedTransaction,
-        None,
         SchemaVersionId(1),
         RelationalSchemaRegistry::new().authority_snapshot(),
         MergedCommitPlan {

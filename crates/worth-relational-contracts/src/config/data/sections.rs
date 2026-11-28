@@ -1,4 +1,3 @@
-use crate::commit_strategies::data::registration::CommitStrategyRegistration;
 use crate::diagnostics::data::RelationalDiagnosticsProfile;
 use crate::history::data::coordinates::{BranchId, HistoryRetentionClass, VersionGraphPolicy};
 use crate::schema::data::{
@@ -37,11 +36,6 @@ pub struct SchemaConfig {
     pub invariant_catalog: InvariantCatalog,
     pub descriptor_semantics_policy: DescriptorSemanticsSupportPolicy,
     pub descriptor_canonical_basis_policy: DescriptorCanonicalBasisSupportPolicy,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct CommitStrategiesConfig {
-    pub registrations: Vec<CommitStrategyRegistration>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

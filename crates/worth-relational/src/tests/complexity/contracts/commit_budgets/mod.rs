@@ -1,9 +1,7 @@
 use crate::facade::history::BranchId;
-use crate::facade::transactions::BulkRelationCreateIntent;
 use crate::facade::transactions::CommitTopology;
 use crate::tests::support::*;
 
-mod bulk_mutation_admission;
 mod contract_registry;
 mod fixtures;
 mod partition_local_commit;

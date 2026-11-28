@@ -8,7 +8,7 @@ use contracts::identity::data::primitives::PartitionId;
 use contracts::transactions::data::primitives::RecordRef;
 use std::{collections::BTreeSet, ops::Range};
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::ValidatedMutationTouch;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::ValidatedMutationTouch;
 use worth_relational_storage::internal_port::storage::overlay::partition::PartitionMutationJournal;
 use worth_relational_storage::internal_port::storage::substrate::SharedMap;
 

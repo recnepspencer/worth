@@ -23,11 +23,17 @@ for proof in "${runtime_proofs[@]}"; do
   bash "$runner" --lib --selection "$proof" --exact --expect-name "$proof"
 done
 
-# The Runtime test enumerates its own binary. Validate names registered in
-# the Storage unit binary using the same exact names in the shared registry.
-storage_proofs="$(rg -o --no-filename '"internal_port::[a-z0-9_:]+"' "$registry" | tr -d '"' | sort -u)"
+# Runtime enumerates its own binary. Check each extracted proof in its owner.
+owner_proofs="$(rg -o --no-filename '"internal_port::[a-z0-9_:]+"' "$registry" "${registry%.rs}" | tr -d '"' | sort -u)"
 while IFS= read -r proof; do
-  bash "$runner" --package worth-relational-storage --lib --selection "$proof" --exact --expect-name "$proof"
-done <<< "$storage_proofs"
+  case "$proof" in
+    internal_port::intent_admission::*) package=worth-relational-mutation ;;
+    internal_port::storage::residency::*) package=worth-relational-durability ;;
+    internal_port::runtime::state::subsystems::indexing::*|internal_port::indexes::*) package=worth-relational-indexes ;;
+    internal_port::storage::overlay::*|internal_port::runtime::state::subsystems::storage::*) package=worth-relational-storage ;;
+    *) printf 'No owner for complexity proof %s\n' "$proof" >&2; exit 1 ;;
+  esac
+  bash "$runner" --package "$package" --lib --selection "$proof" --exact --expect-name "$proof"
+done <<< "$owner_proofs"
 
 echo "[relational-complexity] PASS"

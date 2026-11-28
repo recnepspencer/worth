@@ -107,7 +107,6 @@ pub(super) fn assemble_commit_artifacts(
             deferred_diagnostic_artifacts,
             source_interpretation,
         ) = validated.into_parts();
-        let strategy_artifacts = admitted.strategy_artifacts().cloned();
         let (_, validation_input, merged_plan, commit_log, phase_timing) =
             admitted.phase_view().into_parts();
         let naming_plan = validation_input.naming_plan();
@@ -130,7 +129,6 @@ pub(super) fn assemble_commit_artifacts(
                 created_relations: &created_relations,
                 naming_plan,
                 record_allocations: &mutation_identities.records,
-                strategy_commit_artifacts: strategy_artifacts,
                 schema_continuity: &schema_continuity,
                 deferred_diagnostic_artifacts,
             },

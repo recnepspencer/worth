@@ -45,7 +45,6 @@ impl DecodedQuote {
             cascades: reserve_shared(request, self.cascades.retained)?,
             selection: reserve_shared(request, self.selection.retained)?,
             schema: None,
-            strategy: None,
             validation: None,
             codec_declarations: None,
             control,
@@ -84,14 +83,11 @@ pub(in super::super) fn admit_canonical(
         super::validation::prepare_canonical_readmission(canonical, request)?;
     let (codec, codec_bytes) =
         super::codec_retirements::prepare_canonical_readmission(canonical, request)?;
-    let (strategy, strategy_bytes) =
-        super::strategy::prepare_canonical_readmission(canonical, request)?;
     quote.envelope.retained = quote
         .envelope
         .retained
         .checked_sub(schema_bytes)
         .and_then(|n| n.checked_sub(codec_bytes))
-        .and_then(|n| n.checked_sub(strategy_bytes))
         .and_then(|n| n.checked_add(additional_envelope_bytes))
         .ok_or_else(malformed)?;
     quote.semantic.retained = quote
@@ -101,7 +97,6 @@ pub(in super::super) fn admit_canonical(
         .ok_or_else(malformed)?;
     let (mut memory, transient) = quote.admit(request, input)?;
     memory.schema = Some(schema);
-    memory.strategy = strategy;
     memory.validation = Some(validation);
     memory.codec_declarations = Some(codec);
     Ok((memory, transient))

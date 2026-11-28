@@ -15,7 +15,7 @@ use contracts::transactions::data::outcomes::transaction_commit_error::Transacti
 use contracts::transactions::data::primitives::RecordRef;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
-use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::{
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::{
     project_applied_intents, ValidatedMutationTouch,
 };
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;

@@ -31,30 +31,6 @@ impl RelationalRuntime {
         snapshot
     }
 
-    pub fn commit_strategy_registry(
-        &self,
-    ) -> &crate::commit_strategies::FrozenCommitStrategyRegistry {
-        &self.commit_strategies.registry
-    }
-
-    pub(crate) fn commit_strategy_executor_registry(
-        &self,
-    ) -> &crate::commit_strategies::FrozenCommitStrategyExecutorRegistry {
-        &self.commit_strategies.executors
-    }
-
-    pub fn commit_strategies(
-        &self,
-    ) -> crate::commit_strategies::facade::CommitStrategiesFacade<'_> {
-        crate::commit_strategies::facade::CommitStrategiesFacade::new(self)
-    }
-
-    pub fn commit_strategies_authority(
-        &self,
-    ) -> crate::commit_strategies::facade::CommitStrategiesAuthorityFacade {
-        crate::commit_strategies::facade::CommitStrategiesAuthorityFacade::new()
-    }
-
     pub fn phase4_reference_cost_counters(
         &self,
     ) -> crate::runtime::RelationalPhase4ReferenceCostCounters {

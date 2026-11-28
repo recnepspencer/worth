@@ -9,14 +9,12 @@ use crate::tests::support::{
     aspect_field_locator, aspect_key, create_entity, create_relation, delete_relation_on_branch,
     field_key, runtime_with_test_schema, test_schema_registry, AspectSchemaFixture,
 };
-use crate::transactions::data::RecordRef;
 
 use super::{
-    RelationalAuthorizationEffectTarget, RelationalAuthorizationObservationCounters,
-    RelationalAuthorizationObservationDenial, RelationalAuthorizationObservationPlan,
-    RelationalAuthorizationPathPlan, RelationalAuthorizationPlanDenial,
-    RelationalAuthorizationPredicate, RelationalAuthorizationTraversal,
-    RelationalAuthorizationTraversalDirection,
+    RelationalAuthorizationObservationCounters, RelationalAuthorizationObservationDenial,
+    RelationalAuthorizationObservationPlan, RelationalAuthorizationPathPlan,
+    RelationalAuthorizationPlanDenial, RelationalAuthorizationPredicate,
+    RelationalAuthorizationTraversal, RelationalAuthorizationTraversalDirection,
 };
 
 mod anchored_paths;
@@ -41,14 +39,7 @@ fn actual_snapshot_observation_mints_exact_neutral_evidence() {
         .visibility_authority()
         .snapshot()
         .expect("current snapshot fixture is admitted");
-    let plan = allow_plan(
-        snapshot,
-        fixture.principal,
-        fixture.scope,
-        [RelationalAuthorizationEffectTarget::record(
-            RecordRef::Entity(fixture.scope),
-        )],
-    );
+    let plan = allow_plan(snapshot, fixture.principal, fixture.scope);
     let evidence = fixture
         .runtime
         .observe_authorization(plan, execution)
@@ -125,7 +116,7 @@ fn revocation_changes_only_new_snapshot_authority() {
     let before_evidence = fixture
         .runtime
         .observe_authorization(
-            allow_plan(before.clone(), fixture.principal, fixture.scope, []),
+            allow_plan(before.clone(), fixture.principal, fixture.scope),
             execution,
         )
         .expect("pre-revocation observation");
@@ -143,7 +134,6 @@ fn revocation_changes_only_new_snapshot_authority() {
                 revocation.snapshot.clone(),
                 fixture.principal,
                 fixture.scope,
-                [],
             ),
             execution,
         )
@@ -151,7 +141,7 @@ fn revocation_changes_only_new_snapshot_authority() {
     let historical_evidence = fixture
         .runtime
         .observe_authorization(
-            allow_plan(before, fixture.principal, fixture.scope, []),
+            allow_plan(before, fixture.principal, fixture.scope),
             execution,
         )
         .expect("pinned historical observation");
@@ -180,7 +170,7 @@ fn foreign_runtime_is_a_typed_denial_before_graph_reads() {
     let destination = runtime_with_test_schema();
     let denial = destination
         .observe_authorization(
-            allow_plan(foreign_snapshot, source.principal, source.scope, []),
+            allow_plan(foreign_snapshot, source.principal, source.scope),
             execution,
         )
         .expect_err("foreign snapshot must not open destination runtime");
@@ -208,7 +198,6 @@ fn empty_observation_plan_is_rejected_before_graph_reads() {
         fixture.scope,
         ENTITY_KIND,
         ENTITY_KIND,
-        [],
         [],
     )
     .expect_err("an observation without graph paths is meaningless");
@@ -245,7 +234,6 @@ fn reverse_path_validation_uses_declared_relation_orientation() {
             )],
             [],
         )],
-        [],
     );
 
     assert!(plan.is_ok());
@@ -293,7 +281,6 @@ fn allow_plan(
     snapshot: crate::snapshots::data::SnapshotHandle,
     principal: crate::identity::data::EntityId,
     scope: crate::identity::data::EntityId,
-    effects: impl IntoIterator<Item = RelationalAuthorizationEffectTarget>,
 ) -> RelationalAuthorizationObservationPlan {
     RelationalAuthorizationObservationPlan::try_new(
         snapshot,
@@ -302,7 +289,6 @@ fn allow_plan(
         ENTITY_KIND,
         ENTITY_KIND,
         [allow_path()],
-        effects,
     )
     .expect("fixture policy is structurally valid")
 }
@@ -322,7 +308,6 @@ fn role_and_direct_path_plan(
             allow_path(),
             RelationalAuthorizationPathPlan::new([forward_traversal()], []),
         ],
-        [],
     )
     .expect("fixture policy is structurally valid")
 }

@@ -13,7 +13,7 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
             .schema_registry(acyclicity_and_connectivity_registry())
             .invariant_catalog(InvariantCatalog {
                 registrations: vec![InvariantRegistration::for_rule(
-                    InvariantRule::MaxSnapshotEntities(0),
+                    crate::tests::support::connectivity_publication_rule(KindId(3)),
                     Point::SnapshotPublication,
                     effect,
                 )],
@@ -59,9 +59,9 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
                     error
                         .invariant_violation()
                         .map(|violation| &violation.fields),
-                    Some(InvariantViolationFields::SnapshotEntityLimit {
-                        visible_entities: 1,
-                        limit: 0,
+                    Some(InvariantViolationFields::ConnectivityMinimum {
+                        reachable_target_count: 0,
+                        minimum_reachable_targets: 1,
                         ..
                     })
                 ),
@@ -81,11 +81,12 @@ fn a_native_publication_failure_blocks_custom_preparation_while_a_commit_effect_
             assert_eq!(results[0].failure_effect, Effect::BlockCommit);
             assert!(matches!(
                 &results[0].rule,
-                InvariantReportedRule::Native(InvariantRule::MaxSnapshotEntities(0))
+                InvariantReportedRule::Native(InvariantRule::ConnectivityMinimumContract(contract))
+                    if contract.contract_id.as_str() == "fixture-reachable-target"
             ));
             assert!(
                 matches!(&results[0].verdict, InvariantVerdict::Violation(violation)
-                if matches!(violation.fields, InvariantViolationFields::SnapshotEntityLimit { visible_entities: 1, limit: 0, .. }))
+                if matches!(violation.fields, InvariantViolationFields::ConnectivityMinimum { reachable_target_count: 0, minimum_reachable_targets: 1, .. }))
             );
             assert!(matches!(
                 &results[1].rule,

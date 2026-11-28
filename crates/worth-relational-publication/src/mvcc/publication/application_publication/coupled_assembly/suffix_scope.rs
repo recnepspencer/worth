@@ -211,9 +211,6 @@ pub fn adopt(
         .created_relations
         .append_owned(outcome.created_relations)
         .map_err(TransactionCommitError::conflict)?;
-    current_outcome
-        .preparation_telemetry
-        .accumulate(outcome.preparation_telemetry);
     current_outcome.effect.accumulate(outcome.effect);
     // Retain only this part's actual sparse state for the next physical pin.
     // Applying it over the previous D reuses the ordinary root-region owner.

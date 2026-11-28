@@ -136,13 +136,6 @@ impl DurabilityRecoveryAuthority<'_> {
         let mut source = RelationalRuntime::new(config).map_err(|denial| {
             source_schema::schema_denial(format!("source configuration refused: {denial}"))
         })?;
-        source
-            .unshared_state_mut()
-            .ok_or_else(|| {
-                source_schema::schema_denial("source recovery runtime is already shared".to_owned())
-            })?
-            .commit_strategies
-            .executors = self.runtime.commit_strategy_executor_registry().clone();
         source.restore_initial_schema_authority_after_recovery(initial_authority);
         let (outcome, mut recovered) = source
             .durability_recovery()

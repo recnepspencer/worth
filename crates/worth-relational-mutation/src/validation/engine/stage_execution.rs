@@ -27,7 +27,7 @@ pub(super) fn execute_stage<'state>(
         (planned, retained_bytes)
     } else {
         (
-            plan_invariant_execution(runtime, execution, request, None, stage),
+            plan_invariant_execution(runtime, execution, request, None, None, stage),
             0,
         )
     };

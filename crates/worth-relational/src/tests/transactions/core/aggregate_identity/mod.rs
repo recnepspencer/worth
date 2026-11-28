@@ -15,3 +15,5 @@ mod recovery;
 
 mod cold_recovery;
 mod cold_recovery_fixture;
+
+mod minimum_membership;

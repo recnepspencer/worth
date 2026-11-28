@@ -25,7 +25,6 @@ use super::continuity::validated_replay_continuity_envelope;
 use super::diagnostics::record_replay_diagnostic;
 use super::recovery_plan::replay_recovery_plan_for_chain;
 use super::snapshot_surface::snapshot_surface_is_authoritative;
-use super::strategy_replay::verify_strategy_reexecution_surface;
 use super::ReplayAuthority;
 
 use self::comparison::{replay_comparison_outcome, select_replay_lineage_authority};

@@ -60,7 +60,6 @@ pub(super) fn certify_chip_global_step_endurance(
         const WINDOW: usize = 32;
         let mut cycle_samples = Vec::with_capacity(ITERATIONS);
         let mut total_update_work = 0u64;
-        let mut total_compile_work = 0u64;
         let mut total_adjacency_work = 0u64;
         let mut max_outgoing_relation_count = 0usize;
 
@@ -82,34 +81,6 @@ pub(super) fn certify_chip_global_step_endurance(
                 .latest_commit()
                 .expect("chip global step commit")
                 .clone();
-            let (artifact, compile_work) = measure_counted_work(execution, || {
-                runtime
-                    .compiled_artifacts_authority()
-                    .compile_execution_artifact(
-                        execution,
-                        commit.commit_id,
-                        vec![
-                            PartitionId(930),
-                            PartitionId(931),
-                            PartitionId(932),
-                            PartitionId(933),
-                            PartitionId(934),
-                            PartitionId(935),
-                            PartitionId(936),
-                            PartitionId(937),
-                            PartitionId(950),
-                            PartitionId(951),
-                            PartitionId(952),
-                            PartitionId(953),
-                            PartitionId(954),
-                            PartitionId(955),
-                            PartitionId(956),
-                            PartitionId(957),
-                        ],
-                    )
-                    .expect("chip global step compiled artifact")
-            });
-            total_compile_work += compile_work;
 
             let (outgoing_relations, adjacency_work) = measure_counted_work(execution, || {
                 runtime
@@ -118,16 +89,9 @@ pub(super) fn certify_chip_global_step_endurance(
                     .expect("funded adjacency read succeeds")
             });
             total_adjacency_work += adjacency_work;
-            max_outgoing_relation_count =
-                max_outgoing_relation_count.max(outgoing_relations.len());
-            assert_eq!(
-                runtime
-                    .compiled_artifacts()
-                    .compiled_artifact_authority_status(artifact.artifact_id),
-                CompiledArtifactAuthorityStatus::Authoritative
-            );
+            max_outgoing_relation_count = max_outgoing_relation_count.max(outgoing_relations.len());
 
-            cycle_samples.push(update_work + compile_work + adjacency_work);
+            cycle_samples.push(update_work + adjacency_work);
         }
 
         let first_window_average_cycle_work =
@@ -139,7 +103,7 @@ pub(super) fn certify_chip_global_step_endurance(
             .copied()
             .sum::<u64>()
             / WINDOW as u64;
-        let charged_work = total_update_work + total_compile_work + total_adjacency_work;
+        let charged_work = total_update_work + total_adjacency_work;
         CountedPerfSample {
             charged_work,
             metrics: perf_metrics!({
@@ -147,7 +111,6 @@ pub(super) fn certify_chip_global_step_endurance(
                 "driver_count": drivers.len(),
                 "sink_count": sinks.len(),
                 "average_update_work": total_update_work / ITERATIONS as u64,
-                "average_compile_work": total_compile_work / ITERATIONS as u64,
                 "average_adjacency_work": total_adjacency_work / ITERATIONS as u64,
                 "first_window_average_cycle_work": first_window_average_cycle_work,
                 "last_window_average_cycle_work": last_window_average_cycle_work,

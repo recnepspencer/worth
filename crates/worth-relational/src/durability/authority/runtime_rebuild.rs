@@ -81,8 +81,6 @@ pub(super) fn rebuild_runtime_from_plan(
         restored
             .history
             .discard_unobserved_construction_schema_inputs_for_recovery();
-        unshared_state(&mut restored)?.commit_strategies.executors =
-            plan.commit_strategy_executors().clone();
 
         if let Some(source) = plan.cold_source() {
             unshared_state(&mut restored)?

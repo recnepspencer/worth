@@ -31,11 +31,6 @@ pub(super) fn invariant_violation_witness_key(
             merged_intent_count,
             limit,
         } => format!("merged_intents:{merged_intent_count}:{limit}"),
-        InvariantViolationFields::SnapshotEntityLimit {
-            version_id, limit, ..
-        } => {
-            format!("snapshot_entity_limit:{}:{limit}", version_id.as_u64())
-        }
         InvariantViolationFields::UniqueEntityField {
             field_locator,
             value,

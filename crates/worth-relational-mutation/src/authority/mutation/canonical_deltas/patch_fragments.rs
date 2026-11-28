@@ -1,12 +1,5 @@
-use crate::contracts::publication::patch::data::patch_detail::{
-    PatchDetail, PatchDetailOwnerPort as _,
-};
-use crate::contracts::publication::patch::data::published_authoritative_patch::{
-    PublishedAuthoritativePatch, PublishedAuthoritativePatchOwnerPort as _,
-};
-use crate::contracts::publication::patch::data::semantic_change::{
-    PublishedAuthoritativeAspectChange, PublishedAuthoritativeAspectChangeOwnerPort as _,
-};
+use crate::contracts::publication::patch::data::patch_detail::PatchDetail;
+use crate::contracts::publication::patch::data::published_authoritative_patch::PublishedAuthoritativePatch;
 use worth_foundational::facade::{
     validate_aspect_value, AspectValue as FoundationalAspectValue, AuthoritativeRecordAspectPatch,
     ContractValidatedAspectArtifact, ContractValidationInput, EntityId as FoundationalEntityId,
@@ -15,11 +8,14 @@ use worth_foundational::facade::{
 };
 use worth_proof::TransitionOutcome;
 
-use crate::contracts::publication::patch::data::authoritative_patch_envelope::PublishedAuthoritativeRecordPatch;
+use crate::contracts::publication::patch::data::authoritative_patch_envelope::{
+    PublishedAuthoritativeRecordPatch, PublishedAuthoritativeRecordPatchOwnerPort as _,
+};
 use crate::contracts::publication::patch::data::record_structural_change::RecordStructuralChange;
 use crate::contracts::transactions::data::primitives::RecordRef;
 
-use super::changed_authoritative_patch::authoritative_patch_filtered_to_changed_bindings;
+mod changed_bindings;
+use changed_bindings::authoritative_patch_filtered_to_changed_bindings;
 use super::data::{
     CanonicalAspectDeltaEvidence, CanonicalDeltaError, CanonicalRecordAspectDelta,
     EvaluatedAspectBinding, LifecycleTransitionClass,
@@ -32,59 +28,25 @@ use crate::contracts::transactions::data::outcomes::aspect_delta_failure_fields:
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FoundationalPatchFragment {
-    pub target: RecordRef,
-    pub structural_change: RecordStructuralChange,
     pub patch: AuthoritativeRecordAspectPatch,
-    pub published_patch: PublishedAuthoritativePatch,
-    pub semantic_changes: Vec<PublishedAuthoritativeAspectChange>,
-    pub contains_opaque_aspect: bool,
-    pub detail: PatchDetail,
-    pub relation_birth: Option<crate::contracts::publication::patch::data::authoritative_patch_envelope::PublishedRelationBirth>,
+    pub published: PublishedAuthoritativeRecordPatch,
+}
+
+impl std::ops::Deref for FoundationalPatchFragment {
+    type Target = PublishedAuthoritativeRecordPatch;
+
+    fn deref(&self) -> &Self::Target {
+        &self.published
+    }
 }
 
 impl CanonicalRecordAspectDelta {
     pub(crate) fn into_foundational_patch_fragment(
-        self,
+        &self,
         detail: PatchDetail,
     ) -> Result<FoundationalPatchFragment, CanonicalDeltaError> {
-        let target = self.target.clone();
-        let structural_change = self.structural_change;
-        let contains_opaque_aspect = self.contains_opaque_aspect;
-        let semantic_changes = semantic_changes(&self);
-        let mut sets = Vec::new();
-        let mut clears = Vec::new();
-
-        for binding in self
-            .evaluated_bindings
-            .iter()
-            .filter(|binding| binding.changed)
-        {
-            accumulate_patch_action(&target, binding, &mut sets, &mut clears)?;
-        }
-
-        let patch = match AuthoritativeRecordAspectPatch::whole_aspect(sets, clears) {
-            TransitionOutcome::Success(patch) => patch,
-            TransitionOutcome::Denied(denial) => {
-                return Err(CanonicalDeltaError::FoundationalPatchConstruction {
-                    target: target.clone(),
-                    denial: AspectDeltaPatchConstructionDenial::FoundationalPatchConstructionDenied(
-                        denial,
-                    ),
-                });
-            }
-        };
-
-        let published_patch = published_patch_for_delta(&self, &patch)?;
-        Ok(FoundationalPatchFragment {
-            target,
-            structural_change,
-            patch,
-            published_patch,
-            semantic_changes,
-            contains_opaque_aspect,
-            detail,
-            relation_birth: None,
-        })
+        let patch = delta_patch(self, |_| true)?;
+        FoundationalPatchFragment::from_delta(self, detail, patch)
     }
 }
 
@@ -94,10 +56,12 @@ pub(crate) fn authoritative_patch_with_delta_supplements(
 ) -> Result<AuthoritativeRecordAspectPatch, CanonicalDeltaError> {
     let changed_authoritative_patch =
         authoritative_patch_filtered_to_changed_bindings(delta, authoritative_patch.as_patch())?;
-    let supplemental_patch = non_authoritative_delta_patch(delta)?;
-    if changed_authoritative_patch.is_empty() && supplemental_patch.is_empty() {
-        return Ok(AuthoritativeRecordAspectPatch::empty());
-    }
+    let supplemental_patch = delta_patch(delta, |binding| {
+        !matches!(
+            binding.evidence,
+            CanonicalAspectDeltaEvidence::AuthoritativePatch { .. }
+        )
+    })?;
     if supplemental_patch.is_empty() {
         return Ok(changed_authoritative_patch);
     }
@@ -115,18 +79,17 @@ pub(crate) fn authoritative_patch_with_delta_supplements(
     }
 }
 
-fn non_authoritative_delta_patch(
+fn delta_patch(
     delta: &CanonicalRecordAspectDelta,
+    include: impl Fn(&EvaluatedAspectBinding) -> bool,
 ) -> Result<AuthoritativeRecordAspectPatch, CanonicalDeltaError> {
     let mut sets = Vec::new();
     let mut clears = Vec::new();
-    for binding in delta.evaluated_bindings.iter().filter(|binding| {
-        binding.changed
-            && !matches!(
-                binding.evidence,
-                CanonicalAspectDeltaEvidence::AuthoritativePatch { .. }
-            )
-    }) {
+    for binding in delta
+        .evaluated_bindings
+        .iter()
+        .filter(|binding| binding.changed && include(binding))
+    {
         accumulate_patch_action(&delta.target, binding, &mut sets, &mut clears)?;
     }
     if sets.is_empty() && clears.is_empty() {
@@ -147,38 +110,33 @@ fn non_authoritative_delta_patch(
 }
 
 impl FoundationalPatchFragment {
+    pub(super) fn from_delta(
+        delta: &CanonicalRecordAspectDelta,
+        detail: PatchDetail,
+        patch: AuthoritativeRecordAspectPatch,
+    ) -> Result<Self, CanonicalDeltaError> {
+        let published = PublishedAuthoritativeRecordPatch {
+            target: delta.target.clone(),
+            structural_change: delta.structural_change,
+            semantic_changes: semantic_changes(delta),
+            contains_opaque_aspect: delta.contains_opaque_aspect,
+            detail,
+            relation_birth: None,
+            authoritative_patch: published_patch_for_delta(delta, &patch)?,
+        };
+        Ok(Self { patch, published })
+    }
+
     pub fn into_published_record(self) -> PublishedAuthoritativeRecordPatch {
-        PublishedAuthoritativeRecordPatch {
-            target: self.target,
-            structural_change: self.structural_change,
-            authoritative_patch: self.published_patch,
-            semantic_changes: self.semantic_changes,
-            contains_opaque_aspect: self.contains_opaque_aspect,
-            detail: self.detail,
-            relation_birth: self.relation_birth,
-        }
+        self.published
     }
 
     pub fn published_record_owned_allocation_capacity_bytes(&self) -> u64 {
-        (self.semantic_changes.capacity() as u64)
-            .saturating_mul(std::mem::size_of::<PublishedAuthoritativeAspectChange>() as u64)
-            .saturating_add(self.semantic_changes.iter().fold(0_u64, |bytes, change| {
-                bytes.saturating_add(change.owned_allocation_capacity_bytes())
-            }))
-            .saturating_add(self.published_patch.owned_allocation_capacity_bytes())
-            .saturating_add(self.detail.owned_allocation_capacity_bytes())
+        self.published.owned_allocation_capacity_bytes()
     }
 
     pub fn published_record(&self) -> PublishedAuthoritativeRecordPatch {
-        PublishedAuthoritativeRecordPatch {
-            target: self.target.clone(),
-            structural_change: self.structural_change,
-            authoritative_patch: self.published_patch.clone(),
-            semantic_changes: self.semantic_changes.clone(),
-            contains_opaque_aspect: self.contains_opaque_aspect,
-            detail: self.detail.clone(),
-            relation_birth: self.relation_birth,
-        }
+        self.published.clone()
     }
 }
 

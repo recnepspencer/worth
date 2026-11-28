@@ -6,7 +6,6 @@ mod graph;
 mod historical;
 pub mod mvcc;
 mod retention;
-mod structural_identity;
 
 #[cfg(test)]
 mod tests;

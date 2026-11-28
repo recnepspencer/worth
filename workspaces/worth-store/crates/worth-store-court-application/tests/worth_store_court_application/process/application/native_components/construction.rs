@@ -1,13 +1,5 @@
 //! Construction refusal reaches the caller without retaining the physical home.
 use worth_execution::{CancellationSource, ExecutionRequest, SerialMemoryBudget, SerialRequest};
-use worth_relational::facade::commit_strategies::{
-    CommitStrategyDescriptor, CommitStrategyFamilyName, CommitStrategyId,
-    CommitStrategyRegistration, CommitStrategySemanticName, CommitStrategyVersion,
-    DuplicateCommitStrategyRegistration, PersistentArtifactName, StrategyInputSchemaName,
-    StrategyInputSchemaVersion, StrategyIntentName, StrategyOutputSchemaName,
-    StrategyPacketContract, StrategyReadContract, StrategyReadCostClass, StrategyReadLocalityClass,
-    StrategyReadScopeClass, StrategyTraversalBasis,
-};
 use worth_relational::facade::runtime::{
     RelationalRuntimeApi, RelationalRuntimeConstructionDenial,
 };
@@ -16,29 +8,17 @@ use worth_store_testkit_application_oracle::facade::home_opening::HomeOpeningRef
 use worth_store_application::{ApplicationHomeCloseOutcome, ApplicationHomeOpenRefusal};
 
 #[test]
-fn duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home() {
-    let registration = CommitStrategyRegistration::new(CommitStrategyDescriptor::new(
-        CommitStrategyId(41),
-        CommitStrategySemanticName::new("store.construction.refusal"),
-        CommitStrategyFamilyName::new("store.construction"),
-        CommitStrategyVersion::new(1, 0),
-        StrategyIntentName::new("construction.refusal"),
-        StrategyInputSchemaName::new("construction.input.v1"),
-        StrategyInputSchemaVersion(1),
-        StrategyOutputSchemaName::new("construction.output.v1"),
-        StrategyReadContract {
-            scope_class: StrategyReadScopeClass::ExplicitTargetsOnly,
-            locality_class: StrategyReadLocalityClass::SinglePartition,
-            traversal_basis: StrategyTraversalBasis::NoTraversal,
-            packet_contract: StrategyPacketContract::ProjectionOnly,
-            cost_class: StrategyReadCostClass::ORequestedSurface,
-        },
-        PersistentArtifactName::new("store.construction.refusal"),
-    ))
-    .expect("valid strategy declaration");
-    let builder = RelationalRuntimeApi::builder()
-        .commit_strategy(registration.clone())
-        .commit_strategy(registration);
+fn invalid_invariant_refuses_open_with_its_cause_and_releases_the_home() {
+    use worth_relational::facade::runtime::{
+        InvariantCatalog, InvariantExecutionPoint, InvariantRegistration, InvariantRule,
+    };
+
+    let mut registration =
+        InvariantRegistration::commit_boundary_blocking(InvariantRule::MaxMergedIntents(1));
+    registration.execution_point = InvariantExecutionPoint::ProposedState;
+    let builder = RelationalRuntimeApi::builder().invariant_catalog(InvariantCatalog {
+        registrations: vec![registration],
+    });
     let directory = tempfile::tempdir().unwrap();
     let location = directory.path().join("home");
     let request = SerialRequest::from_memory(
@@ -70,17 +50,16 @@ fn duplicate_strategy_refuses_open_with_its_cause_and_releases_the_home() {
             ),
         )) => home,
         other => panic!(
-            "duplicate strategy refused at wrong phase: {:?}",
+            "invalid invariant refused at wrong phase: {:?}",
             other.map(|_| ())
         ),
     };
     assert!(matches!(
         refused.reason(),
-        RelationalRuntimeConstructionDenial::CommitStrategy(
-            DuplicateCommitStrategyRegistration::Id {
-                id: CommitStrategyId(41)
-            }
-        )
+        RelationalRuntimeConstructionDenial::InvariantExecutionPoint {
+            execution_point: InvariantExecutionPoint::ProposedState,
+            ..
+        }
     ));
     let (_, closed) = refused.close(&execution);
     assert!(matches!(closed, ApplicationHomeCloseOutcome::Closed { .. }));

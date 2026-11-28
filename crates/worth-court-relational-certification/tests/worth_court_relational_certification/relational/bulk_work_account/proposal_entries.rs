@@ -2,14 +2,6 @@
 use super::*;
 use worth_execution::CancellationSource;
 use worth_relational::facade::{
-    commit_strategies::{
-        CanonicalStrategyCommitRequest, CanonicalStrategyOutputArtifact,
-        CommitStrategyExecutionRegistration, CommitStrategyExecutor, CommitStrategyId,
-        CommitStrategyRegistration, IntentReconciliationStrategy, NativeStrategyCommitRequest,
-        PersistentArtifactName, StrategyCallerProvenance, StrategyExecutionResult,
-        StrategyExecutorFailure, StrategyMutationProgram, StrategyObservationContext,
-        StrategyOutputSchemaName, StrategyRequestOrigin,
-    },
     mvcc::{RelationalPublicationOutcome, RelationalTransactionIntent},
     runtime::RelationalRuntimeApi,
     transactions::RelationalExecutionDenialCause,
@@ -21,71 +13,13 @@ enum Entry {
     Ordinary,
     Batch,
     Split,
-    Strategy,
     Prepared,
     CancelledAfterValidation,
 }
-const ENTRIES: [Entry; 5] = [
-    Entry::Ordinary,
-    Entry::Batch,
-    Entry::Split,
-    Entry::Strategy,
-    Entry::Prepared,
-];
+const ENTRIES: [Entry; 4] = [Entry::Ordinary, Entry::Batch, Entry::Split, Entry::Prepared];
 
 // Fixture funding, not a price for an implementation's incidental dispatches.
 const FUNDED_WORK_CEILING: u64 = 1_000_000;
-
-struct CreateDeployment;
-
-impl CommitStrategyExecutor for CreateDeployment {
-    fn execute(
-        &self,
-        _execution: &ExecutionRequest<'_, '_>,
-        _request: &CanonicalStrategyCommitRequest,
-        _observation: &StrategyObservationContext<'_>,
-    ) -> Result<StrategyExecutionResult, StrategyExecutorFailure> {
-        Ok(StrategyExecutionResult::new(
-            CanonicalStrategyOutputArtifact::new(
-                StrategyOutputSchemaName::new(
-                    IntentReconciliationStrategy::DEFAULT_OUTPUT_SCHEMA_NAME,
-                ),
-                b"status=planned".to_vec(),
-                PersistentArtifactName::new("strategy.intent.reconcile.output"),
-            ),
-            StrategyMutationProgram::new(vec![batch_create("deployment-a")]),
-        ))
-    }
-}
-
-fn deployment_strategy() -> (
-    worth_relational::facade::runtime::RelationalRuntime,
-    CanonicalStrategyCommitRequest,
-) {
-    let descriptor = IntentReconciliationStrategy::descriptor(CommitStrategyId(501));
-    let runtime = RelationalRuntimeApi::builder()
-        .schema_registry(schema())
-        .commit_strategy(CommitStrategyRegistration::new(descriptor.clone()).unwrap())
-        .commit_strategy_executor(CommitStrategyExecutionRegistration::new(
-            &descriptor,
-            CreateDeployment,
-        ))
-        .build()
-        .unwrap();
-    let strategy = runtime
-        .commit_strategies()
-        .canonicalize_request(&NativeStrategyCommitRequest::from_native_canonical_bytes(
-            descriptor.semantic_name().clone(),
-            b"create-deployment".to_vec(),
-            StrategyCallerProvenance {
-                request_origin: StrategyRequestOrigin::Test,
-                actor_identity: None,
-                correlation_id: None,
-            },
-        ))
-        .unwrap();
-    (runtime, strategy)
-}
 
 fn commit(
     entry: Entry,
@@ -99,50 +33,33 @@ fn commit(
         None,
     );
     let setup_request = ExecutionRequest::serial(&setup);
-    let (runtime, strategy) = deployment_strategy();
+    let runtime = RelationalRuntimeApi::builder()
+        .schema_registry(schema())
+        .build()
+        .unwrap();
     let identity = runtime.main_branch_identity();
     let (before, basis) = runtime.observe_branch(&identity).unwrap();
-    let snapshot = runtime
-        .snapshots()
-        .snapshot_for_observation(&basis.observation())
+    let mut staged = runtime
+        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
         .unwrap();
-    let facade = runtime.commit_strategies();
-    let draft = facade
-        .execute(&strategy, &snapshot, &setup_request)
+    staged
+        .push_batch(
+            batch_create("deployment-a"),
+            setup_request.allocation_policy(),
+        )
         .unwrap();
-    runtime.snapshots().release_snapshot(&snapshot).unwrap();
-
-    let mut authority = runtime.commit_strategies_authority();
-    let mut lowered = None;
-    let mut staged = None;
-    let intent = RelationalTransactionIntent::ordinary();
-    if matches!(entry, Entry::Strategy) {
-        lowered = Some(
-            authority
-                .lower_execution(&setup_request, &runtime, &strategy, &draft, &basis, intent)
-                .unwrap(),
-        );
-    } else {
-        let mut transaction = runtime.begin_branch_transaction(&basis, intent).unwrap();
-        for batch in draft.mutation_program().worker_batches() {
-            transaction
-                .push_batch(batch.clone(), setup_request.allocation_policy())
+    staged
+        .prepare_merged_plan(&setup_request, &runtime)
+        .unwrap();
+    if matches!(entry, Entry::Batch) {
+        for label in ["empty-left", "empty-right"] {
+            staged
+                .push_batch(
+                    WorkerIntentBatch::new(label),
+                    setup_request.allocation_policy(),
+                )
                 .unwrap();
         }
-        transaction
-            .prepare_merged_plan(&setup_request, &runtime)
-            .unwrap();
-        if matches!(entry, Entry::Batch) {
-            for label in ["empty-left", "empty-right"] {
-                transaction
-                    .push_batch(
-                        WorkerIntentBatch::new(label),
-                        setup_request.allocation_policy(),
-                    )
-                    .unwrap();
-            }
-        }
-        staged = Some(transaction);
     }
 
     let cancellation = CancellationSource::new();
@@ -164,20 +81,12 @@ fn commit(
                 cancellation.cancel();
             }
             let candidate = match entry {
-                Entry::Strategy => {
-                    let proposal =
-                        authority.validate_lowered_plan(&execution, &runtime, lowered.unwrap())?;
-                    authority.prepare_validated_commit(&execution, &runtime, proposal)?
-                }
                 Entry::Ordinary | Entry::Batch => {
-                    return runtime.commit_branch_transaction(&execution, staged.unwrap());
+                    return runtime.commit_branch_transaction(&execution, staged);
                 }
-                Entry::Prepared => {
-                    runtime.prepare_branch_transaction(&execution, staged.unwrap())?
-                }
+                Entry::Prepared => runtime.prepare_branch_transaction(&execution, staged)?,
                 Entry::Split | Entry::CancelledAfterValidation => {
-                    let proposal =
-                        runtime.validate_branch_transaction(&execution, staged.unwrap())?;
+                    let proposal = runtime.validate_branch_transaction(&execution, staged)?;
                     if matches!(entry, Entry::CancelledAfterValidation) {
                         cancellation.cancel();
                     }
@@ -226,9 +135,6 @@ fn commit(
 #[test]
 fn one_work_account_bounds_each_entry_with_its_original_canonical_evidence() {
     for entry in ENTRIES {
-        // Strategy retains its actual StrategyCommitArtifactBundle; the other
-        // entries discard that decoration. Hashing those distinct original
-        // canonical subjects may have different byte costs.
         let (reference, required) = commit(entry, FUNDED_WORK_CEILING, true, false);
         reference.unwrap();
         assert!(required > 0 && required < FUNDED_WORK_CEILING);
@@ -295,65 +201,5 @@ fn assert_cancelled(outcome: Result<CommitResult, TransactionCommitError>) {
     assert_eq!(
         denial.kind,
         CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::Cancelled),
-    );
-}
-
-#[test]
-fn strategy_consults_before_its_stale_basis_check() {
-    let (runtime, strategy) = deployment_strategy();
-    let identity = runtime.main_branch_identity();
-    let (_, original_basis) = runtime.observe_branch(&identity).unwrap();
-    let setup = worth_testkit_relational::shared_relational_certification_test_execution_policy::serial_request();
-    let setup = ExecutionRequest::serial(&setup);
-    let snapshot = runtime
-        .snapshots()
-        .snapshot_for_observation(&original_basis.observation())
-        .unwrap();
-    let draft = runtime
-        .commit_strategies()
-        .execute(&strategy, &snapshot, &setup)
-        .unwrap();
-    runtime.snapshots().release_snapshot(&snapshot).unwrap();
-    let lowered = runtime
-        .commit_strategies_authority()
-        .lower_execution(
-            &setup,
-            &runtime,
-            &strategy,
-            &draft,
-            &original_basis,
-            RelationalTransactionIntent::ordinary(),
-        )
-        .unwrap();
-    use worth_execution::{SerialMemoryBudget, SerialRequest};
-    use worth_relational::facade::transactions::CommitExecutionDenialKind;
-    let cancellation = CancellationSource::new();
-    let backing =
-        SerialRequest::from_memory(SerialMemoryBudget::new(None), cancellation.token(), None);
-    let execution = ExecutionRequest::serial(&backing);
-    let (_, basis) = runtime
-        .observe_branch(&runtime.main_branch_identity())
-        .unwrap();
-    let mut transaction = runtime
-        .begin_branch_transaction(&basis, RelationalTransactionIntent::ordinary())
-        .unwrap();
-    transaction
-        .push_batch(
-            WorkerIntentBatch::new("move-head"),
-            execution.allocation_policy(),
-        )
-        .unwrap();
-    runtime
-        .commit_branch_transaction(&execution, transaction)
-        .unwrap();
-    cancellation.cancel();
-    let error = runtime
-        .commit_strategies_authority()
-        .validate_lowered_plan(&execution, &runtime, lowered)
-        .unwrap_err();
-    assert!(
-        matches!(error, TransactionCommitError::Execution { denial, .. }
-        if denial.kind == CommitExecutionDenialKind::Cause(RelationalExecutionDenialCause::Cancelled)),
-        "cancellation outranks currency before any strategy work"
     );
 }

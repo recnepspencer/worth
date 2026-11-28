@@ -279,7 +279,6 @@ fn guarded_authorization_lowers_only_actual_relational_matches() {
             KindId(1),
             KindId(1),
             [RelationalAuthorizationPathPlan::new([], [])],
-            [],
         )
         .unwrap();
         runtime.observe_authorization(plan, execution).unwrap()
@@ -338,7 +337,6 @@ fn actor_evidence_and_guard_narrowing_must_match_the_installed_clause() {
         KindId(1),
         KindId(1),
         [RelationalAuthorizationPathPlan::new([], [])],
-        [],
     )
     .unwrap();
     let evidence = runtime.observe_authorization(plan, execution).unwrap();

@@ -1,8 +1,8 @@
 use worth_execution::ExecutionRequest;
-pub(crate) use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::{
+pub(crate) use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::{
     collection, inverse_projection, preparation, project_applied_intents, work_observation,
 };
-pub use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::{
+pub use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::{
     ValidatedEntityStructTouch, ValidatedMutationTouch, ValidatedMutationTouchProjectionError,
     ValidatedMutationTouchProjectionWork, ValidatedMutationTouches,
 };

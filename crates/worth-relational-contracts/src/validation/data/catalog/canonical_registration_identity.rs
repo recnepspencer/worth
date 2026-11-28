@@ -99,11 +99,7 @@ impl RegistrationIdentityBytes {
                 self.tag(2);
                 self.usize(*limit);
             }
-            // Rule-body tag 3 stays retired; surviving meanings keep their tags.
-            InvariantRule::MaxSnapshotEntities(limit) => {
-                self.tag(4);
-                self.usize(*limit);
-            }
+            // Rule-body tags 3 and 4 stay retired; surviving meanings keep their tags.
             InvariantRule::UniqueEntityAspectField { field_locator } => {
                 self.tag(5);
                 self.string(field_locator.aspect().aspect_key().as_str());

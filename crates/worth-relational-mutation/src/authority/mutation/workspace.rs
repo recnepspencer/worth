@@ -4,8 +4,6 @@ pub mod created_bindings;
 use created_bindings::{CreatedEntityKey, CreatedRelationKey};
 use worth_execution::ExecutionOrderedMap;
 
-use crate::contracts::transactions::data::preparation_strategy_posture::{ParallelLegality, ParallelProfitability, PreparationStrategySelection};
-use crate::contracts::transactions::data::preparation_strategy::PreparationStrategy;
 use crate::contracts::config::data::policies::MutationConfig;
 use crate::contracts::identity::data::primitives::VersionId;
 use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
@@ -15,31 +13,6 @@ use crate::contracts::schema::data::RelationalSchemaRegistry;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
 use super::mutation_context::MutationContext;
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub struct MutationPreparationTelemetry {
-    pub packet_count: usize,
-    pub packet_item_count: usize,
-    pub packet_peak_width_total: usize,
-    pub scope_unit_count: usize,
-    pub parallel_legal_count: usize,
-    pub parallel_profitable_count: usize,
-    pub serial_strategy_count: usize,
-    pub staged_parallel_strategy_count: usize,
-}
-
-impl MutationPreparationTelemetry {
-    pub fn accumulate(&mut self, part: Self) {
-        self.packet_count += part.packet_count;
-        self.packet_item_count += part.packet_item_count;
-        self.packet_peak_width_total += part.packet_peak_width_total;
-        self.scope_unit_count += part.scope_unit_count;
-        self.parallel_legal_count += part.parallel_legal_count;
-        self.parallel_profitable_count += part.parallel_profitable_count;
-        self.serial_strategy_count += part.serial_strategy_count;
-        self.staged_parallel_strategy_count += part.staged_parallel_strategy_count;
-    }
-}
 
 #[derive(Debug, Clone, Default)]
 pub struct BranchLocalDeleteAllowance {
@@ -58,7 +31,6 @@ pub(crate) struct MutationWorkspace<'a> {
     version_id: VersionId,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     deferred_publication_edges: Option<&'a std::collections::BTreeSet<RelationId>>,
-    preparation_telemetry: MutationPreparationTelemetry,
     created_entities: ExecutionOrderedMap<CreatedEntityKey<'a>, EntityId>,
     created_relations: ExecutionOrderedMap<CreatedRelationKey<'a>, RelationId>,
     record_allocations: Option<
@@ -90,7 +62,6 @@ impl<'a> MutationWorkspace<'a> {
             version_id,
             branch_local_delete_allowance,
             deferred_publication_edges: None,
-            preparation_telemetry: MutationPreparationTelemetry::default(),
             created_entities: ExecutionOrderedMap::default(),
             created_relations: ExecutionOrderedMap::default(),
             record_allocations,
@@ -107,13 +78,7 @@ impl<'a> MutationWorkspace<'a> {
         self.deferred_publication_edges = Some(edges);
     }
 
-    pub(crate) fn commit_work_budget(
-        &self,
-    ) -> Option<&crate::contracts::execution::request_work::RequestWorkBudget> {
-        self.commit_work_budget.as_ref()
-    }
-
-    /// Only owner mutation/assembly belongs here. Packet staging settles itself.
+    /// Charge mutation and effect assembly to the original request.
     pub(crate) fn run_owned_mutation<T, E>(
         &mut self,
         mutate: impl FnOnce(&mut Self) -> Result<T, E>,
@@ -252,41 +217,6 @@ impl<'a> MutationWorkspace<'a> {
         kind_id: crate::contracts::identity::data::primitives::KindId,
     ) -> Option<&LoweredAspectContractPlan> {
         self.aspect_plans.relation_plans.get(&kind_id)
-    }
-
-    pub(crate) fn record_preparation_strategy(
-        &mut self,
-        packet_count: usize,
-        packet_item_count: usize,
-        packet_max_width: usize,
-        scope_unit_count: usize,
-        strategy: PreparationStrategy,
-    ) {
-        self.preparation_telemetry.packet_count += packet_count;
-        self.preparation_telemetry.packet_item_count += packet_item_count;
-        self.preparation_telemetry.packet_peak_width_total += packet_max_width;
-        self.preparation_telemetry.scope_unit_count += scope_unit_count;
-        if matches!(strategy.parallel_legality, ParallelLegality::ProvenParallel) {
-            self.preparation_telemetry.parallel_legal_count += 1;
-        }
-        if matches!(
-            strategy.parallel_profitability,
-            ParallelProfitability::Profitable
-        ) {
-            self.preparation_telemetry.parallel_profitable_count += 1;
-        }
-        match strategy.selected_mode {
-            PreparationStrategySelection::Serial => {
-                self.preparation_telemetry.serial_strategy_count += 1;
-            }
-            PreparationStrategySelection::StagedParallel => {
-                self.preparation_telemetry.staged_parallel_strategy_count += 1;
-            }
-        }
-    }
-
-    pub(crate) fn preparation_telemetry(&self) -> MutationPreparationTelemetry {
-        self.preparation_telemetry
     }
 }
 

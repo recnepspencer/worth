@@ -8,7 +8,7 @@ use crate::transactions::data::outcomes::conflict_class::ConflictClass;
 use crate::transactions::data::outcomes::transaction_commit_error::TransactionCommitError;
 
 use super::proposal_invariants::stale_validated_proposal;
-use super::proposal_source::{RelationalProposalSource, StrategyProposalDecoration};
+use super::proposal_source::RelationalProposalSource;
 use super::validated_proposal::ValidatedRelationalProposal;
 
 impl RelationalPreparationRuntime {
@@ -35,37 +35,10 @@ impl RelationalPreparationRuntime {
             .validate_branch_transaction_source(
                 execution,
                 transaction,
-                RelationalProposalSource::Transaction {
-                    lowered: None,
-                    strategy: None,
-                },
+                RelationalProposalSource::Transaction,
                 context,
             )
             .map_err(crate::execution::allocation_commit_error)
-    }
-
-    pub(crate) fn validate_consulted_lowered_strategy_proposal(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        selected_branch_state: crate::branch::SelectedRelationalBranchState,
-        merged_plan: crate::transactions::data::MergedCommitPlan,
-        strategy: StrategyProposalDecoration,
-    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        let runtime = if execution.is_leased() {
-            self.with_commit_work_budget(None)
-        } else {
-            self.clone()
-        };
-        runtime.validate_branch_transaction_source(
-            execution,
-            transaction,
-            RelationalProposalSource::Transaction {
-                lowered: Some((selected_branch_state, merged_plan)),
-                strategy: Some(strategy),
-            },
-            None,
-        )
     }
 
     pub(in crate::mvcc) fn validate_consulted_retained_entity_selection(
@@ -179,7 +152,6 @@ impl RelationalPreparationRuntime {
             self,
             execution,
             transaction,
-            source,
             round,
             complexity_before,
             batch_count,
@@ -248,24 +220,6 @@ impl RelationalRuntime {
                 execution,
                 transaction,
                 Some(context),
-            )
-    }
-
-    pub(crate) fn validate_consulted_lowered_strategy_proposal(
-        &self,
-        execution: &worth_execution::ExecutionRequest<'_, '_>,
-        transaction: crate::mvcc::BranchBoundRelationalTransaction,
-        selected_branch_state: crate::branch::SelectedRelationalBranchState,
-        merged_plan: crate::transactions::data::MergedCommitPlan,
-        strategy: StrategyProposalDecoration,
-    ) -> Result<ValidatedRelationalProposal, TransactionCommitError> {
-        self.preparation_runtime_snapshot()
-            .validate_consulted_lowered_strategy_proposal(
-                execution,
-                transaction,
-                selected_branch_state,
-                merged_plan,
-                strategy,
             )
     }
 }

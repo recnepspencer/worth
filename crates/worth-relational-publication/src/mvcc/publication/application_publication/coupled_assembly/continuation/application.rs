@@ -89,7 +89,7 @@ pub fn preserves_applied_records(
                     fragment.structural_change,
                     fragment.contains_opaque_aspect,
                     &fragment.semantic_changes,
-                    &fragment.published_patch,
+                    &fragment.authoritative_patch,
                     fragment.relation_birth.as_ref(),
                 ) {
                     return Ok(false);

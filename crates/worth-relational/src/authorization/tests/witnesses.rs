@@ -80,7 +80,6 @@ fn observe_same_witness_names(
         ENTITY_KIND,
         ENTITY_KIND,
         [path],
-        [],
     )
     .expect("same-witness comparison plan is structurally valid");
     runtime

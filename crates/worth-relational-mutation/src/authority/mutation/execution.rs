@@ -6,13 +6,10 @@ use worth_relational_storage::internal_port::storage::overlay::working_state::Wo
 
 use super::effect_assembly::assemble_effect;
 use super::intents::dispatch_intent;
-use super::{
-    BranchLocalDeleteAllowance, MutationEffect, MutationPreparationTelemetry, MutationWorkspace,
-};
+use super::{BranchLocalDeleteAllowance, MutationEffect, MutationWorkspace};
 
 pub struct MutationApplyOutcome {
     pub effect: MutationEffect,
-    pub preparation_telemetry: MutationPreparationTelemetry,
     pub created_entities: crate::contracts::transactions::data::outcomes::created_entity_bindings::CommitCreatedEntityBindings,
     pub created_relations: crate::contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
 }
@@ -27,7 +24,6 @@ pub fn apply_plan_to_working_state(
     symbols: &mut dyn worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::mutation_input::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     record_allocations: &mut dyn worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::allocation_batch::MutationRecordAllocations,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::contracts::execution::request_work::RequestWorkBudget>,
 ) -> Result<MutationApplyOutcome, super::MutationApplyDenial> {
     apply_plan_with_publication_edges(
@@ -40,7 +36,6 @@ pub fn apply_plan_to_working_state(
         symbols,
         branch_local_delete_allowance,
         record_allocations,
-        lease,
         commit_work_budget,
         None,
     )
@@ -56,7 +51,6 @@ pub fn apply_plan_with_publication_edges(
     symbols: &mut dyn worth_relational_storage::internal_port::runtime::state::subsystems::services::symbol_table::mutation_input::MutationSymbolMeanings,
     branch_local_delete_allowance: BranchLocalDeleteAllowance,
     record_allocations: &mut dyn worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::allocation_batch::MutationRecordAllocations,
-    lease: Option<&worth_execution::ExecutionResourceLease<'_>>,
     commit_work_budget: Option<crate::contracts::execution::request_work::RequestWorkBudget>,
     deferred_publication_edges: Option<
         &std::collections::BTreeSet<crate::contracts::identity::data::record_ids::RelationId>,
@@ -83,17 +77,15 @@ pub fn apply_plan_with_publication_edges(
 
     for intent in &apply_plan.merged_intents {
         workspace.begin_intent(intent);
-        let child = dispatch_intent(intent, &mut workspace, lease)?;
+        let child = dispatch_intent(intent, &mut workspace)?;
         effect.accumulate(
             workspace.run_owned_mutation(|workspace| assemble_effect(child, workspace))?,
         );
     }
 
-    let preparation_telemetry = workspace.preparation_telemetry();
     let (created_entities, created_relations) = workspace.into_created_bindings();
     Ok(MutationApplyOutcome {
         effect,
-        preparation_telemetry,
         created_entities,
         created_relations,
     })

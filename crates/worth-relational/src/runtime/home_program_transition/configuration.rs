@@ -73,7 +73,6 @@ fn same_owner_policies(before: &RelationalRuntimeConfig, after: &RelationalRunti
         && before.schema.descriptor_semantics_policy == after.schema.descriptor_semantics_policy
         && before.schema.descriptor_canonical_basis_policy
             == after.schema.descriptor_canonical_basis_policy
-        && before.commit_strategies == after.commit_strategies
         && before.identity == after.identity
         && before.storage == after.storage
         && before.visibility == after.visibility

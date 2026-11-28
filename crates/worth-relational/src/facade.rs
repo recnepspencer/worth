@@ -16,55 +16,13 @@ pub mod branch;
 mod runtime_validation_exports;
 pub mod config {
     pub use crate::config::data::{
-        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CommitStrategiesConfig,
-        CompiledLanePolicy, ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource,
-        CrossContextPolicy, DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy,
-        DurableLogRetentionMode, MvccConfig, PublicationConfig, RelationalConfigOverride,
-        RelationalRuntimeProfile, ResidencyBudget, RetentionBackend, RetentionPolicy,
-        RuntimeExecutionLane, RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy,
-        StorageLayoutConfig, VisibilityCachePolicy,
-    };
-}
-pub mod commit_strategies {
-    pub use crate::commit_strategies::data::execution::executor_registration::{
-        CommitStrategyExecutionRegistration, CommitStrategyExecutor,
-    };
-    pub use crate::commit_strategies::data::execution::observation_context::StrategyObservationContext;
-    pub use crate::commit_strategies::data::execution::visibility_read_view::StrategyVisibilityReadView;
-    pub use crate::commit_strategies::data::lowering::LoweredStrategyCommitPlan;
-    pub use crate::commit_strategies::data::{
-        CanonicalStrategyCommitRequest, CanonicalStrategyInputArtifact,
-        CanonicalStrategyInputDigest, CanonicalStrategyOutputArtifact,
-        CanonicalStrategyOutputDigest, CommitStrategyDescriptor, CommitStrategyDescriptorDigest,
-        CommitStrategyFamilyName, CommitStrategyId, CommitStrategyRegistration,
-        CommitStrategyRegistrationError, CommitStrategySemanticName, CommitStrategyVersion,
-        NativeStrategyCommitRequest, PersistentArtifactName, StrategyCallerProvenance,
-        StrategyCommitArtifactBundle, StrategyCommitRequestError, StrategyEntityAspectReadRecord,
-        StrategyExecutionDraft, StrategyExecutionResult, StrategyExecutionSummary,
-        StrategyExecutorFailure, StrategyExecutorFailureClass, StrategyInputSchemaName,
-        StrategyInputSchemaVersion, StrategyIntentName, StrategyIntentScopeDigest,
-        StrategyLoweringError, StrategyLoweringProvenance, StrategyLoweringSummary,
-        StrategyMergeConflictClass, StrategyMergeDescriptor, StrategyMergeSemantics,
-        StrategyMutationProgram, StrategyMutationProgramDigest, StrategyOutputSchemaName,
-        StrategyPacketContract, StrategyProjectedAspectReadSet, StrategyReadContract,
-        StrategyReadCostClass, StrategyReadLocalityClass, StrategyReadScopeClass,
-        StrategyReplayDescriptor, StrategyRequestOrigin, StrategyTraversalBasis,
-    };
-    pub use crate::commit_strategies::facade::{
-        CommitStrategiesAuthorityFacade, CommitStrategiesFacade,
-    };
-    pub use crate::commit_strategies::strategies::{
-        AspectFieldReconciliationInput, AspectFieldReconciliationOutput,
-        AspectFieldReconciliationStrategy, EntityReplacementReconciliationAction,
-        EntityReplacementReconciliationInput, EntityReplacementReconciliationOutput,
-        EntityReplacementReconciliationStrategy, IntentReconciliationAction,
-        IntentReconciliationInput, IntentReconciliationOutput, IntentReconciliationStrategy,
-        ReplicaConvergenceAction, ReplicaConvergenceInput, ReplicaConvergenceOutput,
-        ReplicaConvergenceStrategy,
-    };
-    pub use crate::commit_strategies::{
-        CommitStrategyExecutionRegistryError, DuplicateCommitStrategyRegistration,
-        FrozenCommitStrategyRegistry, StrategyExecutionError,
+        AdjacencyBackend, AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy,
+        ConfigProvenance, ConfigProvenanceEntry, ConfigValueSource, CrossContextPolicy,
+        DiagnosticsBoundary, DurabilityPolicy, DurableLogPolicy, DurableLogRetentionMode,
+        MvccConfig, PublicationConfig, RelationalConfigOverride, RelationalRuntimeProfile,
+        ResidencyBudget, RetentionBackend, RetentionPolicy, RuntimeExecutionLane,
+        RuntimeProfileBoundaryPolicy, SnapshotReleasePolicy, StorageLayoutConfig,
+        VisibilityCachePolicy,
     };
 }
 #[path = "facade/change_source.rs"]
@@ -161,9 +119,6 @@ pub mod runtime {
     pub use crate::publication::ownership::{
         CurrentOwnershipContactsForTest, CurrentOwnershipLocalityForTest,
     };
-    pub use crate::publication::{
-        PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
-    };
     pub use crate::runtime::builder::{RelationalRuntimeBuilder, RelationalRuntimeDefinition};
     #[cfg(test)]
     pub use crate::runtime::HarnessAuditMode;
@@ -171,7 +126,6 @@ pub mod runtime {
     pub use crate::runtime::{
         custom_invariant_inventory_digest, home_program_transition_body_digest,
         AdjacencyStructuralRevision, AdjacencyStructuralRevisionDenial, BoundedFrontierReadStop,
-        CompiledArtifactAuthorityStatus, CompiledArtifactError, CompiledExecutionArtifact,
         ComplexityContract, ComplexityStatus, EntityProjectionRecord, EntityRecordProjection,
         FreshRelationalInitialSchemaInstallation, HomeReadmissionMetadataKinds,
         HomeReadmissionMetadataReadDenial, HomeReadmissionMetadataView, InvariantAccess,
@@ -198,9 +152,8 @@ pub mod runtime {
         RelationalRuntimeConfig, RelationalRuntimeConstructionDenial, RelationalRuntimeForkDenial,
         RelationalSchemaTransitionAdmissionDenial, RelationalSchemaTransitionAdmissionDenialKind,
         RelationalSnapshotPositionAdmissionStop, RelationalStoppedRetentionPass,
-        ReplaySchemaVersion, RuntimeComplexityCounters, SimulationAccess, SimulationAuthority,
-        SnapshotGuard, SnapshotPositionDenial, TopologyFreezeMode, VisibilityProjectionView,
-        VisibilityReadContext, VisibilityRetentionAuthority,
+        ReplaySchemaVersion, RuntimeComplexityCounters, SnapshotGuard, SnapshotPositionDenial,
+        VisibilityProjectionView, VisibilityReadContext, VisibilityRetentionAuthority,
     };
     pub use crate::runtime::{
         PreparedRelationalRuntimeClose, PreparedRelationalSourceClose,

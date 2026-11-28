@@ -33,7 +33,6 @@ pub(super) fn serialize<S: serde::Serializer>(
         branch_context,
         branch_cell_checkpoint,
         authority_kind,
-        strategy_artifacts,
         schema_version,
         schema_authority,
         merged_plan,
@@ -98,7 +97,8 @@ pub(super) fn serialize<S: serde::Serializer>(
     fields.serialize_field("branch_context", branch_context)?;
     fields.serialize_field("branch_cell_checkpoint", branch_cell_checkpoint)?;
     fields.serialize_field("authority_kind", authority_kind)?;
-    fields.serialize_field("strategy_artifacts", strategy_artifacts)?;
+    // Existing envelope formats reserve this slot. Ordinary artifacts keep their canonical bytes.
+    fields.serialize_field("strategy_artifacts", &Option::<()>::None)?;
     if legacy {
         fields.serialize_field("merge_execution_authority", &Option::<()>::None)?;
         fields.serialize_field("merge_parent_branches", &[(); 0])?;

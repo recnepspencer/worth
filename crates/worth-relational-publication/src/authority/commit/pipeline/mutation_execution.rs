@@ -8,8 +8,6 @@ use worth_relational_mutation::internal_port::authority::mutation::execution::Mu
 use worth_relational_mutation::internal_port::authority::mutation::pending_identities::PendingMutationIdentities;
 use worth_relational_storage::internal_port::storage::overlay::working_state::WorkingState;
 
-pub mod telemetry;
-
 pub(super) struct MutatedCommitExecution {
     pub(super) prepared: PreparedCommitState,
     pub(super) working_state: WorkingState,
@@ -53,7 +51,6 @@ pub(super) fn mutate_commit_execution(
                 source_interpretation,
             },
         ) = prepared.into_parts();
-        telemetry::record_preparation_telemetry(instrumentation, outcome.preparation_telemetry);
         crate::authority::commit::phases::prepare::working_state_metrics::record_mutation_counters(
             instrumentation,
             &working_state,

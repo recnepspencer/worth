@@ -5,8 +5,7 @@ impl WorthQueryAuthorizationDecisionFact {
         (self.recorded_actor.is_none()
             && self.delegation.is_none()
             && self.delegation_activation.is_none()
-            && self.native_dependencies.is_none()
-            && self.relational.proposed_effects().is_empty())
+            && self.native_dependencies.is_none())
         .then_some(self.relational.as_ref())
     }
 }

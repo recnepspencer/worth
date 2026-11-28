@@ -29,8 +29,9 @@ impl ConflictClass {
                 DiagnosticCode::StorageInconsistencyDetected
             }
             Self::RelationEndpointUpdateStateInconsistency { .. }
-            | Self::RelationEndpointUpdateKindMismatch { .. }
-            | Self::BulkImportDomainMismatch { .. } => DiagnosticCode::StorageInconsistencyDetected,
+            | Self::RelationEndpointUpdateKindMismatch { .. } => {
+                DiagnosticCode::StorageInconsistencyDetected
+            }
             Self::EntityAuthoritativeAspectStateDenied { .. } => {
                 DiagnosticCode::StorageInconsistencyDetected
             }
@@ -123,16 +124,6 @@ impl ConflictClass {
             } => format!(
                 "relation endpoint update intent kind {} does not match authoritative relation kind {}",
                 intent_kind_id.0, authoritative_kind_id.0
-            ),
-            Self::BulkImportDomainMismatch {
-                expected,
-                actual,
-                stage,
-            } => format!(
-                "{} expected {} rows but staged {} rows",
-                stage.label(),
-                expected.label(),
-                actual.label()
             ),
             Self::EntityAuthoritativeAspectStateDenied { kind_id, denial } => format!(
                 "entity field declarations for kind {} could not be admitted as authoritative aspect state: {}",

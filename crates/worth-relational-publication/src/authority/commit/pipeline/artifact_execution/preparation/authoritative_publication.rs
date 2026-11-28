@@ -36,8 +36,6 @@ pub(super) struct PublicationAuthorityInput<'a> {
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
-    pub(super) strategy_artifacts:
-        Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) changed_records: &'a [RecordRef],
     pub(super) diagnostics_summary: &'a contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact,
@@ -113,7 +111,6 @@ pub(super) fn prepare_authoritative_publication(
             input.commit_reference,
             input.branch_id,
             input.merged_plan.canonical_authority_kind(),
-            input.strategy_artifacts,
             input.merged_plan.commands(),
             input.patch.clone(),
             input.descriptive_touches,

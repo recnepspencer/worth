@@ -4,7 +4,7 @@ use crate::authority::commit::phases::applied_mutation::{
     apply_mutation_draft, apply_retained_entity_selection_draft, AppliedDraftCustody,
 };
 use crate::authority::commit::phases::prepare::{
-    prepare_lowered_working_state_scope, prepare_working_state_scope, PreparedWorkingStateScope,
+    prepare_working_state_scope, PreparedWorkingStateScope,
 };
 use crate::authority::commit::pipeline::{CommitPhaseBacking, CommitPhaseReservation};
 use crate::mvcc::validation::proposal_identity::RelationalMutationProposalIdentity;
@@ -76,18 +76,7 @@ pub(super) fn prepare(
     }
     let runtime = round.with_candidate_symbols(&symbols);
     let prepared = match source {
-        RelationalProposalSource::Transaction {
-            lowered: Some((_, plan)),
-            ..
-        } => prepare_lowered_working_state_scope(
-            &runtime,
-            transaction,
-            selected,
-            crate::mvcc::transaction::normalized_plan::OwnedNormalizedPlan::copy_for_request(
-                plan, execution,
-            )?,
-        ),
-        RelationalProposalSource::Transaction { lowered: None, .. } => {
+        RelationalProposalSource::Transaction => {
             prepare_working_state_scope(&runtime, transaction, selected, execution)?
         }
         RelationalProposalSource::RetainedEntitySelection(retained) => {

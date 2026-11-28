@@ -274,7 +274,6 @@ pub fn native_stamp_for_independent_grant(
                 kind,
                 kind,
                 [RelationalAuthorizationPathPlan::new([], [predicate])],
-                [],
             )
             .unwrap();
             let observation = runtime.observe_authorization(plan, execution).unwrap();

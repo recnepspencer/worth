@@ -9,7 +9,6 @@ pub use worth_relational_contracts::internal_port::structural_traversal;
 pub mod authority;
 pub mod branch;
 pub mod change_source;
-pub mod commit_strategies;
 pub mod content;
 pub mod durability;
 pub mod execution;

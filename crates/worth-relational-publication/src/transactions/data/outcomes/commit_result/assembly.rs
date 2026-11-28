@@ -75,7 +75,6 @@ pub(crate) fn assemble_commit_result(
         transaction_id,
         phase_timing,
         commit_log,
-        strategy_artifacts,
         diagnostics,
         complexity_before,
         prior_complexity_delta,
@@ -140,7 +139,6 @@ pub(crate) fn assemble_commit_result(
             patch_position,
             aspect_evaluation_traces,
             aspect_emission_traces,
-            strategy_artifacts,
         },
         validation: CommitValidation {
             summary: validation_summary,

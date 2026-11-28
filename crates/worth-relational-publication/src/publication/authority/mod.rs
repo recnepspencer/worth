@@ -4,8 +4,6 @@ pub mod bundle_publication;
 pub mod diagnostic_emission;
 pub mod pending_settlement;
 pub mod performed_settlement;
-pub mod post_commit_consumer;
-pub mod post_commit_consumption;
 pub mod post_commit_diagnostics;
 pub mod settled_receipt;
 
@@ -57,8 +55,3 @@ impl<'runtime> PublicationAuthority<'runtime> {
 
 pub use pending_settlement::SettlementPublication;
 pub use performed_settlement::RelationalSettlementBinding;
-
-pub(crate) use post_commit_consumer::production_post_commit_consumer;
-pub use post_commit_consumer::{
-    PostCommitConsumer, PostCommitConsumptionContext, PostCommitConsumptionFailure,
-};

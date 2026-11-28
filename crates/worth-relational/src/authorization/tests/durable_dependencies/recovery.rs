@@ -20,7 +20,6 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
                     .expect("current snapshot fixture is admitted"),
                 principal,
                 scope,
-                [],
             ),
             execution,
         )
@@ -55,7 +54,6 @@ fn source_native_stamp_compares_after_checkpoint_recovery() {
                     .expect("current snapshot fixture is admitted"),
                 principal,
                 scope,
-                [],
             ),
             execution,
         )

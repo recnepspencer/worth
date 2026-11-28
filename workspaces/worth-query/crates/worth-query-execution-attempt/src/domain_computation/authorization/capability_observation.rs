@@ -266,7 +266,6 @@ fn observe_exact_policy(
         installed.principal_kind(),
         installed.scope_kind(),
         paths,
-        [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     relational

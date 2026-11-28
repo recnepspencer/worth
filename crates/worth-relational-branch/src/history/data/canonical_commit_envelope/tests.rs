@@ -61,7 +61,6 @@ pub(crate) fn envelope_with_patch_at(
         receipt.clone(),
         BranchId("main".to_string()),
         CanonicalCommitAuthorityKind::VersionedTransaction,
-        None,
         SchemaVersionId(1),
         RelationalSchemaRegistry::new().authority_snapshot(),
         MergedCommitPlan {

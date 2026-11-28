@@ -72,10 +72,6 @@ struct PerformanceCounterSummary {
     preparation_scope_unit_count: usize,
     preparation_serial_strategy_count: usize,
     preparation_staged_parallel_strategy_count: usize,
-    post_commit_consumer_packet_count: usize,
-    post_commit_consumer_peak_width_total: usize,
-    post_commit_serial_strategy_count: usize,
-    post_commit_parallel_strategy_count: usize,
     replay_digest_parity_checks: usize,
     replay_summary_parity_checks: usize,
 }
@@ -92,10 +88,6 @@ impl PerformanceCounterSummary {
             preparation_serial_strategy_count: counters.preparation_serial_strategy_count,
             preparation_staged_parallel_strategy_count: counters
                 .preparation_staged_parallel_strategy_count,
-            post_commit_consumer_packet_count: counters.post_commit_consumer_packet_count,
-            post_commit_consumer_peak_width_total: counters.post_commit_consumer_peak_width_total,
-            post_commit_serial_strategy_count: counters.post_commit_serial_strategy_count,
-            post_commit_parallel_strategy_count: counters.post_commit_parallel_strategy_count,
             replay_digest_parity_checks: counters.replay_digest_parity_checks,
             replay_summary_parity_checks: counters.replay_summary_parity_checks,
         }
@@ -136,24 +128,6 @@ impl PerformanceCounterSummary {
                 terminal_harness_summary_projection_usize(
                     self.preparation_staged_parallel_strategy_count,
                 ),
-            ),
-            (
-                "post_commit_consumer_packet_count",
-                terminal_harness_summary_projection_usize(self.post_commit_consumer_packet_count),
-            ),
-            (
-                "post_commit_consumer_peak_width_total",
-                terminal_harness_summary_projection_usize(
-                    self.post_commit_consumer_peak_width_total,
-                ),
-            ),
-            (
-                "post_commit_serial_strategy_count",
-                terminal_harness_summary_projection_usize(self.post_commit_serial_strategy_count),
-            ),
-            (
-                "post_commit_parallel_strategy_count",
-                terminal_harness_summary_projection_usize(self.post_commit_parallel_strategy_count),
             ),
             (
                 "replay_digest_parity_checks",

@@ -42,7 +42,7 @@ Properties:
     the bound the predicate omits.
 -/
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/authorization/capability_lowering.rs:39-101 sha256:dbad2ea8453fb9ce731e9a38f4273e131d70d6f0006044cc2499cb1cda452e43
--- proof-mirror: workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/authorization/capability_observation/grant_selection.rs:253-281 sha256:452c566d8fd97bfb4781b55016a95b239cf1ca5c4067a7a065d851d74e1b740f
+-- proof-mirror: workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/authorization/capability_observation/grant_selection.rs:252-280 sha256:452c566d8fd97bfb4781b55016a95b239cf1ca5c4067a7a065d851d74e1b740f
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-attempt/src/domain_computation/authorization/capability_observation/expiry.rs:13-16 sha256:3370e8be9356dbf95b50e0b9301008d831870e718f4f64512cb64c9d5a25e725
 -- proof-mirror: workspaces/worth-query/crates/worth-query-execution-lineage/src/domain_computation/authorization/capability_lowering/extent_status.rs:22-57 sha256:59e0cf355edea31a10bd84a851189c5c93502f62c35d51caf54af6f4f000f19c
 

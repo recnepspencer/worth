@@ -9,8 +9,6 @@ use contracts::history::data::history_policy::HistoryShapeClassification;
 use contracts::snapshots::data::coordinates::SnapshotId;
 use worth_relational_contracts::internal_port as contracts;
 
-use super::post_commit_consumer::PostCommitConsumptionFailure;
-
 pub(super) fn build_publication_diagnostic_entries(
     commit_id: CommitId,
     snapshot_id: SnapshotId,
@@ -18,7 +16,6 @@ pub(super) fn build_publication_diagnostic_entries(
     parents: &[CommitId],
     merge_parent_branches: &[BranchId],
     merge_base_commits: &[CommitId],
-    consumer_failure: Option<PostCommitConsumptionFailure>,
 ) -> Vec<RelationalDiagnosticsEntry> {
     let authoritative_parent_list = OrderedParentList::from_authoritative(parents.to_vec());
     let history_shape = authoritative_parent_list.history_shape_classification();
@@ -57,16 +54,6 @@ pub(super) fn build_publication_diagnostic_entries(
             merge_base_commits,
         ),
     ));
-    if matches!(
-        consumer_failure,
-        Some(PostCommitConsumptionFailure::ConsumerFailureNonAuthoritative)
-    ) {
-        entries.push(RelationalDiagnosticsEntry::new(
-            DiagnosticCode::PreparationFailure,
-            "post-commit consumer failed without affecting publication",
-            post_commit_consumer_failure_fields(commit_id, snapshot_id),
-        ));
-    }
     entries
 }
 
@@ -125,24 +112,6 @@ fn publication_fields(
     .into()
 }
 
-fn post_commit_consumer_failure_fields(
-    commit_id: CommitId,
-    snapshot_id: SnapshotId,
-) -> RelationalDiagnosticFields {
-    RelationalDiagnosticValue::object([
-        (
-            "failure_class",
-            RelationalDiagnosticValue::string("consumer_failure_non_authoritative"),
-        ),
-        ("commit_id", RelationalDiagnosticValue::CommitId(commit_id)),
-        (
-            "snapshot_id",
-            RelationalDiagnosticValue::SnapshotId(snapshot_id),
-        ),
-    ])
-    .into()
-}
-
 fn history_shape_value(history_shape: HistoryShapeClassification) -> RelationalDiagnosticValue {
     RelationalDiagnosticValue::string(format!("{history_shape:?}"))
 }
@@ -163,4 +132,28 @@ fn branch_id_array(branch_ids: &[BranchId]) -> RelationalDiagnosticValue {
             .cloned()
             .map(RelationalDiagnosticValue::BranchId),
     )
+}
+
+impl super::PublicationAuthority<'_> {
+    pub(crate) fn record_publication_diagnostics(
+        &self,
+        commit_id: CommitId,
+        snapshot_id: SnapshotId,
+        branch_id: &BranchId,
+        parents: &[CommitId],
+    ) {
+        use contracts::diagnostics::data::artifacts::{DiagnosticsArtifactKind, DiagnosticsScope};
+        self.push_bounded_diagnostic(
+            DiagnosticsScope::PatchPublication,
+            DiagnosticsArtifactKind::MinimalSummary,
+            build_publication_diagnostic_entries(
+                commit_id,
+                snapshot_id,
+                branch_id,
+                parents,
+                &[],
+                &[],
+            ),
+        );
+    }
 }

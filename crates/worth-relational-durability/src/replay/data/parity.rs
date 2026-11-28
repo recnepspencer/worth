@@ -22,7 +22,6 @@ pub enum ReplaySurfaceAuthorityKind {
     Snapshot,
     BranchHead,
     Lineage,
-    Strategy,
     DerivedIndexes,
 }
 

@@ -1,5 +1,3 @@
-use crate::commit_strategies::data::execution::executor_registration::CommitStrategyExecutionRegistration;
-use crate::commit_strategies::data::CommitStrategyRegistration;
 use crate::config::data::{
     AdjacencyPolicy, CascadeDeletePolicy, CompiledLanePolicy, CrossContextPolicy, DurabilityPolicy,
     DurableLogPolicy, MvccConfig, PublicationConfig, StorageLayoutConfig, VisibilityCachePolicy,
@@ -135,32 +133,6 @@ impl<'a> DurabilitySetup<'a> {
 
     pub fn durability_policy(&mut self, durability_policy: DurabilityPolicy) -> &mut Self {
         self.builder.overrides.durability.policy = Some(durability_policy);
-        self
-    }
-}
-
-pub struct StrategySetup<'a> {
-    pub(super) builder: &'a mut RelationalRuntimeBuilder,
-}
-
-impl<'a> StrategySetup<'a> {
-    pub fn commit_strategy(&mut self, commit_strategy: CommitStrategyRegistration) -> &mut Self {
-        self.builder
-            .overrides
-            .commit_strategies
-            .registrations
-            .get_or_insert_with(Vec::new)
-            .push(commit_strategy);
-        self
-    }
-
-    pub fn commit_strategy_executor(
-        &mut self,
-        commit_strategy_executor: CommitStrategyExecutionRegistration,
-    ) -> &mut Self {
-        self.builder
-            .commit_strategy_executors
-            .push(commit_strategy_executor);
         self
     }
 }

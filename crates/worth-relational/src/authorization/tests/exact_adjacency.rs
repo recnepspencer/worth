@@ -103,7 +103,6 @@ fn observe_exact_adjacency(
         ENTITY_KIND,
         ENTITY_KIND,
         [path],
-        [],
     )
     .expect("the exact adjacency plan is valid");
     fixture

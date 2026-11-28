@@ -1,7 +1,7 @@
 use super::*;
 
-mod chip_recovery_compile;
-mod chip_rich_recovery_compile;
+mod chip_recovery;
+mod chip_rich_recovery;
 mod geometry_publication_replay_truth;
 mod geometry_replay_reconstruction;
 
@@ -12,9 +12,9 @@ fn perf_hot_cold_path_matrix() {
     let execution = &worth_execution::ExecutionRequest::serial(&host_request);
 
     geometry_replay_reconstruction::certify_geometry_hot_commit_vs_replay_reconstruction(execution);
-    chip_recovery_compile::certify_chip_hot_compile_vs_recovery_compile(execution);
+    chip_recovery::certify_chip_hot_commit_and_recovery(execution);
     geometry_publication_replay_truth::certify_geometry_rich_publication_hot_vs_replay_truth(
         execution,
     );
-    chip_rich_recovery_compile::certify_chip_rich_compile_hot_vs_recovery_compile(execution);
+    chip_rich_recovery::certify_chip_rich_hot_commit_and_recovery(execution);
 }

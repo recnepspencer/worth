@@ -50,8 +50,7 @@ pub(super) fn medium_recovery_plan(
         descriptor_semantics_version,
         restore_authoritative_envelope_commit_ids,
         Some(cold_source),
-    )
-    .with_commit_strategy_executors(runtime.commit_strategy_executor_registry().clone());
+    );
     plan.acknowledge_selected_checkpoint();
     plan.attach_original_source(original_source);
     Ok(plan)

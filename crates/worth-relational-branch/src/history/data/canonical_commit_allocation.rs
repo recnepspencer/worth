@@ -95,7 +95,6 @@ impl CanonicalCommitEnvelopeBody {
             // strings across several domains. Their canonical encoding is the
             // owner-defined variable-size footprint; the fixed Option/object
             // storage is already charged by the envelope object allocation.
-            .saturating_add(optional_canonical_nested_bytes(&self.strategy_artifacts))
             .saturating_add(optional_canonical_nested_bytes(&self.schema_transition))
             .saturating_add(optional_canonical_nested_bytes(
                 &self.schema_continuation_descriptor,

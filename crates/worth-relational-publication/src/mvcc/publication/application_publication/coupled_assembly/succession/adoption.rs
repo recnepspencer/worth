@@ -15,8 +15,8 @@ use std::ops::Range;
 use worth_execution::ExecutionRequest;
 use worth_relational_contracts::internal_port as contracts;
 use worth_relational_mutation::internal_port::mvcc::transaction::normalized_plan::OwnedNormalizedPlan;
-use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::ValidatedMutationTouch;
-use worth_relational_mutation::internal_port::mvcc::validation::proposal_touches::ValidatedMutationTouch as Touch;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::ValidatedMutationTouch;
+use worth_relational_mutation::internal_port::mvcc::validation::proposal_footprint::touches::ValidatedMutationTouch as Touch;
 use worth_relational_storage::internal_port::content::attachments::RelationalContentAttachments;
 
 /// Withdraw every superseded round's batches before final composition, so the

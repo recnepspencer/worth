@@ -1,6 +1,6 @@
 use super::*;
 
-pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
+pub(super) fn certify_event_wave_churn_rich_diagnostics(
     execution: &worth_execution::ExecutionRequest<'_, '_>,
 ) {
     let event_wave_rich_diagnostics_samples = capture_counted_samples(|| {
@@ -41,9 +41,7 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
 
         const ITERATIONS: usize = 16;
         let mut total_update_work = 0u64;
-        let mut total_compile_work = 0u64;
         let mut total_adjacency_work = 0u64;
-        let mut max_compiled_record_count = 0usize;
         let mut max_outgoing_relation_count = 0usize;
 
         runtime.performance_access().reset_counters();
@@ -63,26 +61,6 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
                 .latest_commit()
                 .expect("chip event-wave rich commit")
                 .clone();
-            let (artifact, compile_work) = measure_counted_work(execution, || {
-                runtime
-                    .compiled_artifacts_authority()
-                    .compile_execution_artifact(
-                        execution,
-                        commit.commit_id,
-                        vec![
-                            PartitionId(7),
-                            PartitionId(11),
-                            PartitionId(13),
-                            PartitionId(17),
-                            PartitionId(19),
-                            PartitionId(29),
-                        ],
-                    )
-                    .expect("chip event-wave rich compiled artifact")
-            });
-            total_compile_work += compile_work;
-            max_compiled_record_count =
-                max_compiled_record_count.max(artifact.compiled_record_count);
 
             let (outgoing_relations, adjacency_work) = measure_counted_work(execution, || {
                 runtime
@@ -91,26 +69,17 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
                     .expect("funded adjacency read succeeds")
             });
             total_adjacency_work += adjacency_work;
-            max_outgoing_relation_count =
-                max_outgoing_relation_count.max(outgoing_relations.len());
-            assert_eq!(
-                runtime
-                    .compiled_artifacts()
-                    .compiled_artifact_authority_status(artifact.artifact_id),
-                CompiledArtifactAuthorityStatus::Authoritative
-            );
+            max_outgoing_relation_count = max_outgoing_relation_count.max(outgoing_relations.len());
         }
 
         let (diagnostic_artifact_count, detailed_trace_entries) =
             fresh_diagnostics_metrics(&runtime, diagnostics_start);
         CountedPerfSample {
-            charged_work: total_update_work + total_compile_work + total_adjacency_work,
+            charged_work: total_update_work + total_adjacency_work,
             metrics: perf_metrics!({
                 "iterations": ITERATIONS,
                 "total_update_work": total_update_work,
-                "total_compile_work": total_compile_work,
                 "total_adjacency_work": total_adjacency_work,
-                "max_compiled_record_count": max_compiled_record_count,
                 "max_outgoing_relation_count": max_outgoing_relation_count,
                 "diagnostic_artifact_count": diagnostic_artifact_count,
                 "detailed_trace_entries": detailed_trace_entries,
@@ -123,11 +92,10 @@ pub(super) fn certify_event_wave_compile_churn_rich_diagnostics(
         .all(|sample| sample.charged_work > 0));
     assert_counted_budget(
         &event_wave_rich_diagnostics_samples,
-        "chip event-wave rich diagnostics should keep compile windows supported while surfacing diagnostic cost clearly",
+        "chip event-wave rich diagnostics should keep mutation windows bounded while surfacing diagnostic cost clearly",
         |metrics| {
             metrics["iterations"].as_u64() == Some(16)
                 && metrics["max_outgoing_relation_count"].as_u64() == Some(16)
-                && metrics["max_compiled_record_count"].as_u64().unwrap_or(0) > 0
                 && metrics["total_update_work"].as_u64().unwrap_or(0) > 0
                 && metrics["diagnostic_artifact_count"].as_u64().unwrap_or(0) >= 16
                 && metrics["detailed_trace_entries"].as_u64().is_some()

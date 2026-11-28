@@ -8,7 +8,7 @@ pub mod witness_keys;
 use serde::{Deserialize, Serialize};
 
 use crate::config::data::CascadeDeletePolicy;
-use crate::identity::data::{EntityId, KindId, PartitionId, VersionId};
+use crate::identity::data::{EntityId, KindId, PartitionId};
 use crate::schema::data::{
     ContractId, EndpointDeletionIntegrityMode, SymmetryMode, UniquenessScope,
 };
@@ -29,11 +29,6 @@ pub enum InvariantViolationFields {
     None,
     MergedIntentLimit {
         merged_intent_count: usize,
-        limit: usize,
-    },
-    SnapshotEntityLimit {
-        version_id: VersionId,
-        visible_entities: usize,
         limit: usize,
     },
     UniqueEntityField {
@@ -258,8 +253,7 @@ impl InvariantViolationFieldsOwnerPort for InvariantViolationFields {
             | Fields::Acyclicity { contract_id, .. }
             | Fields::ConnectivityMinimum { contract_id, .. } => contract_id.as_str().len() as u64,
             Fields::None
-            | Fields::MergedIntentLimit { .. }
-            | Fields::SnapshotEntityLimit { .. } => 0,
+            | Fields::MergedIntentLimit { .. } => 0,
         }
     }
 }

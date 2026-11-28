@@ -167,9 +167,6 @@ impl DetachedRelationalTransactionOverlay {
                 self.refund_replaced_inputs();
                 self.normalization_generation = generation;
                 self.effective_records = Default::default();
-                for batch in &self.batches {
-                    self.effective_records.stage(batch);
-                }
                 (entries, Ok(()))
             }
         }

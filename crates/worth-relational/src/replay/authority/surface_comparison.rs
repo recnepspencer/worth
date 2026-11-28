@@ -1,14 +1,13 @@
-use crate::commit_strategies::data::StrategyCommitArtifactBundle;
 use crate::history::data::{OrderedParentList, RelationalCommitReceipt};
 use crate::replay::data::{
     digest_branch_head_summary, digest_branch_head_surface, digest_canonical_patch_summary,
     digest_canonical_patch_surface, digest_diagnostics_summary, digest_diagnostics_surface,
     digest_history_summary, digest_history_surface, digest_snapshot_summary,
-    digest_snapshot_surface, digest_strategy_replay_descriptor, digest_strategy_replay_summary,
-    CanonicalCommitEnvelope, DescriptorComparisonBasis, DescriptorParityCheck, ReplayMismatch,
-    ReplayMismatchClass, ReplayObservableSurface, ReplaySnapshotSurface,
-    ReplaySurfaceAuthorityKind, ReplaySurfaceComparisonBasis, ReplaySurfaceParityCheck,
-    ReplayVerificationLayer, ReplayVerificationPlan, VerifiedReplaySurfaceDigest,
+    digest_snapshot_surface, CanonicalCommitEnvelope, DescriptorComparisonBasis,
+    DescriptorParityCheck, ReplayMismatch, ReplayMismatchClass, ReplayObservableSurface,
+    ReplaySnapshotSurface, ReplaySurfaceAuthorityKind, ReplaySurfaceComparisonBasis,
+    ReplaySurfaceParityCheck, ReplayVerificationLayer, ReplayVerificationPlan,
+    VerifiedReplaySurfaceDigest,
 };
 use crate::runtime::RelationalRuntime;
 
@@ -262,21 +261,5 @@ pub(super) fn surface_basis_for_published_lineage(
         Some(crate::replay::data::digest_lineage_event_summary(
             published_lineage.digest_basis().event_batch(),
         )),
-    )
-}
-
-pub(super) fn surface_basis_for_strategy(
-    strategy_artifacts: Option<&StrategyCommitArtifactBundle>,
-) -> ReplaySurfaceComparisonBasis {
-    ReplaySurfaceComparisonBasis::new(
-        ReplaySurfaceAuthorityKind::Strategy,
-        strategy_artifacts.map(|artifacts| {
-            VerifiedReplaySurfaceDigest::from_digest(
-                ReplaySurfaceAuthorityKind::Strategy,
-                digest_strategy_replay_descriptor(artifacts.replay_descriptor()),
-            )
-        }),
-        strategy_artifacts
-            .map(|artifacts| digest_strategy_replay_summary(artifacts.replay_descriptor())),
     )
 }

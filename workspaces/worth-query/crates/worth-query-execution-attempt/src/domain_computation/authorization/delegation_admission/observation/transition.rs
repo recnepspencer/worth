@@ -65,7 +65,6 @@ pub(super) fn observe_transition(
         installed.grant_kind(),
         installed.scope_kind(),
         [narrowing, link],
-        [],
     )
     .map_err(|_| invalid_policy(installed.contract().name()))?;
     let evidence = relational

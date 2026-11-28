@@ -5,7 +5,6 @@ mod execution;
 mod lineage_authority;
 mod recovery_plan;
 mod snapshot_surface;
-mod strategy_replay;
 mod surface_comparison;
 
 use crate::performance::ReplayLineageAuthorityIndexedSource;

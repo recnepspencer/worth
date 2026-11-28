@@ -8,8 +8,7 @@ impl InvariantRule {
         match self {
             Self::EntityAspectExclusion
             | Self::LiveRecordRequiresSidecar(_)
-            | Self::MaxMergedIntents(_)
-            | Self::MaxSnapshotEntities(_) => 0,
+            | Self::MaxMergedIntents(_) => 0,
             Self::UniqueEntityAspectField { field_locator } => {
                 field_locator.owned_allocation_capacity_bytes() as u64
             }

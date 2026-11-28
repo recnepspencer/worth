@@ -59,7 +59,6 @@ pub struct CommitPublication {
     pub patch_position: contracts::publication::patch::data::patch_position::PatchStreamPosition,
     pub aspect_evaluation_traces: Vec<AspectEvaluationTrace>,
     pub aspect_emission_traces: Vec<AspectEmissionTrace>,
-    pub strategy_artifacts: Option<contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle>,
 }
 
 pub use contracts::transactions::data::outcomes::commit_summaries::CommitSchemaSummary;

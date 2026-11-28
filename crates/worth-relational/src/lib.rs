@@ -50,7 +50,6 @@ mod authorization;
 mod branch;
 mod capabilities;
 mod change_source;
-mod commit_strategies;
 mod content;
 mod durability;
 mod execution;
@@ -58,12 +57,7 @@ mod history;
 mod identity_authority {
     pub(crate) use worth_relational_contracts::internal_port::identity_authority::authority::relational_source_truth_authority;
     pub use worth_relational_contracts::internal_port::identity_authority::{
-        RelationalBranchIdentityKind, RelationalCanonicalDigestIdentityBasis,
-        RelationalCommitIdentityKind, RelationalEntityIdentityKind, RelationalRelationIdentityKind,
-        RelationalSnapshotIdentityKind, RelationalSourceTruthAuthorityIdentity,
-        RelationalSourceTruthBoundaryBridgedIdentity, RelationalSourceTruthDigestIdentityEvidence,
-        RelationalSourceTruthExternalIdentityToken, RelationalSourceTruthProjectionIdentity,
-        RelationalVersionIdentityKind, RelationalWorkspaceIdentityKind,
+        RelationalCommitIdentityKind, RelationalSourceTruthAuthorityIdentity,
     };
 }
 mod indexes;
@@ -76,7 +70,6 @@ mod projected_member_domain;
 mod publication;
 mod replay;
 mod runtime;
-mod simulation;
 mod storage;
 mod transactions;
 mod validation;

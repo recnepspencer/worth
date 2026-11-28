@@ -294,7 +294,6 @@ fn observe_path(
         ENTITY_KIND,
         ENTITY_KIND,
         [path],
-        [],
     )
     .expect("strictly-greater observation plan must be structurally valid");
     runtime

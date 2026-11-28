@@ -64,7 +64,6 @@ pub use cell::{ReconstructedRegionHead, RelationalColdRegion, RelationalRegionRe
 
 pub mod operation_residency;
 pub mod retention;
-pub mod rolling_window;
 pub mod working_set;
 pub use operation_residency::OperationResidency;
 pub use retention::{MirrorOwnerSlot, RelationalRegionRetention, ResidencyCustody};

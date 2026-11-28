@@ -18,7 +18,6 @@ use crate::facade::indexes::{
 use crate::facade::inspection::{
     ConnectivityInspectionBudget, ConnectivityInspectionRequest, InspectionRecordClass,
     InspectionScope, KindInspectionRequest, RecentCommitInspectionRequest,
-    StructuralIdentityQueryRequest,
 };
 use crate::facade::lineage::{
     HistoricalResolutionBoundednessBasis, HistoricalResolutionRequest, LineageDivergenceRequest,
@@ -30,8 +29,7 @@ use crate::facade::query::{
     ReductionDiscipline,
 };
 use crate::facade::replay::{RelationalReplayRequest, ReplayExecutionMode, ReplayVerificationMode};
-use crate::facade::runtime::{CompiledArtifactAuthorityStatus, EntityRecordProjection};
-use crate::facade::symbols::Symbol;
+use crate::facade::runtime::EntityRecordProjection;
 use crate::replay::data::digest_diagnostics_surface;
 use crate::tests::support::*;
 use crate::validation::data::{

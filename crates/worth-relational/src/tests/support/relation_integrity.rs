@@ -88,3 +88,19 @@ pub(crate) fn create_endpoint_deletion_relation_fixture(
     let relation = create_relation(execution, runtime, source, target, client_key);
     (source, target, relation)
 }
+
+/// A real publication invariant: every source must reach another entity.
+pub(crate) fn connectivity_publication_rule(source_kind: KindId) -> InvariantRule {
+    InvariantRule::ConnectivityMinimumContract(
+        crate::schema::data::LoweredConnectivityMinimumContract {
+            contract_id: "fixture-reachable-target".into(),
+            source_kind_ids: vec![source_kind],
+            relation_kind_id: KindId(2),
+            target_kind_ids: vec![KindId(1)],
+            minimum_reachable_targets: 1,
+            enforcement_boundary:
+                crate::schema::data::ConnectivityMinimumEnforcement::SnapshotPublication,
+            plan_revision: crate::schema::data::RelationIntegrityPlanRevision(1),
+        },
+    )
+}

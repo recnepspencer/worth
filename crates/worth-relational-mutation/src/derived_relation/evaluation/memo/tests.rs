@@ -158,6 +158,7 @@ fn evaluation<'a>(
         registry,
         root_definition: registry.derived_relation(&identity("union")).unwrap(),
         read: source,
+        retain_support: true,
         pending: Vec::new(),
         values: MemoValues::default(),
         entities: BTreeMap::new(),

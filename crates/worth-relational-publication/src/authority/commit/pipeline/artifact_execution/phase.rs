@@ -9,7 +9,6 @@ use crate::authority::commit::phases::publication::enforce_patch_budget;
 use crate::authority::commit::phases::schema_continuity::SchemaContinuityPlan;
 use crate::authority::commit::publication::assemble_patch;
 use crate::transactions::data::outcomes::commit_result::CommitPhaseTiming;
-use contracts::commit_strategies::data::artifacts::artifact_bundle::StrategyCommitArtifactBundle;
 use contracts::history::data::commit_receipt::RelationalCommitReceipt;
 use contracts::history::data::coordinates::BranchId;
 use contracts::identity::data::primitives::VersionId;
@@ -35,7 +34,6 @@ pub(super) struct ArtifactAssemblyInput<'a> {
     pub(super) created_relations: &'a contracts::transactions::data::outcomes::created_relation_bindings::CommitCreatedRelationBindings,
     pub(super) naming_plan: Option<&'a contracts::lineage::data::postures::CommitNamingPlan>,
     pub(super) record_allocations: &'a worth_relational_storage::internal_port::runtime::state::subsystems::record_identity::pending_allocations::PendingRecordAllocations,
-    pub(super) strategy_commit_artifacts: Option<StrategyCommitArtifactBundle>,
     pub(super) schema_continuity: &'a SchemaContinuityPlan,
     pub(super) deferred_diagnostic_artifacts:
         Vec<contracts::diagnostics::data::artifacts::RelationalDiagnosticArtifact>,
@@ -87,7 +85,6 @@ pub(super) fn assemble_authoritative_publication_phase(
             created_relations: input.created_relations,
             naming_plan: input.naming_plan,
             record_allocations: input.record_allocations,
-            strategy_artifacts: input.strategy_commit_artifacts,
             schema_continuity: input.schema_continuity,
             effect,
             deferred_diagnostic_artifacts: input.deferred_diagnostic_artifacts,

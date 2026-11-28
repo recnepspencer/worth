@@ -43,7 +43,6 @@ pub trait RecoveryPlanOwnerPort: Sized {
         &crate::durability::source_initial_inputs::producer_roster::OriginalBranchSchemaInputs,
     >;
     fn tail_log(&self) -> &[crate::durability::migration::ReadmittedCanonicalCommit];
-    fn commit_strategy_executors(&self) -> &FrozenCommitStrategyExecutorRegistry;
 
     fn new(
         config: contracts::config::data::runtime_config::RelationalRuntimeConfig,
@@ -59,11 +58,6 @@ pub trait RecoveryPlanOwnerPort: Sized {
                 dyn storage::durability::medium::cold_source::RelationalDurableColdSource,
             >,
         >,
-    ) -> Self;
-
-    fn with_commit_strategy_executors(
-        self,
-        executors: FrozenCommitStrategyExecutorRegistry,
     ) -> Self;
 
     fn tail_commit_count(&self) -> usize;
@@ -141,10 +135,6 @@ impl RecoveryPlanOwnerPort for RecoveryPlan {
         &self.tail_log
     }
 
-    fn commit_strategy_executors(&self) -> &FrozenCommitStrategyExecutorRegistry {
-        &self.commit_strategy_executors
-    }
-
     fn new(
         config: contracts::config::data::runtime_config::RelationalRuntimeConfig,
         checkpoint: Option<DurableCheckpoint>,
@@ -171,13 +161,6 @@ impl RecoveryPlanOwnerPort for RecoveryPlan {
             restore_authoritative_envelope_commit_ids,
             cold_source,
         )
-    }
-
-    fn with_commit_strategy_executors(
-        self,
-        executors: FrozenCommitStrategyExecutorRegistry,
-    ) -> Self {
-        self.with_commit_strategy_executors(executors)
     }
 
     fn tail_commit_count(&self) -> usize {

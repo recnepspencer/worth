@@ -129,21 +129,11 @@ impl<'runtime> InspectionAccess<'runtime> {
                 availability: InspectionAvailability::Direct,
             }),
         };
-        let structural_identity_evidence = if open_result.view.is_some() {
-            self.structural_identity(
-                execution,
-                InspectionScope::Version(version_id),
-                record_observation.target.clone(),
-            )?
-        } else {
-            None
-        };
         Ok(HistoricalRecordInspection {
             branch_id: branch_id.clone(),
             record_observation,
             lineage_resolution_context,
             aspect_history_observation,
-            structural_identity_evidence,
             retention_availability_observation: Some(HistoricalAvailabilityObservation {
                 version_id,
                 availability: open_result.availability,

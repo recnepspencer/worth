@@ -10,7 +10,6 @@ use crate::visibility::snapshot_read_view::RelationalReadView;
 
 use super::{
     InspectionAccessPath, InspectionAvailability, InspectionDegradation, InspectionOrigin,
-    StructuralIdentityEvidence,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -81,6 +80,5 @@ pub struct HistoricalRecordInspection {
     pub record_observation: HistoricalRecordObservation,
     pub lineage_resolution_context: Option<HistoricalLineageResolution>,
     pub aspect_history_observation: Option<HistoricalAspectObservation>,
-    pub structural_identity_evidence: Option<StructuralIdentityEvidence>,
     pub retention_availability_observation: Option<HistoricalAvailabilityObservation>,
 }

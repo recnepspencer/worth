@@ -43,10 +43,6 @@ pub(crate) struct ValidatedProposalState {
     pub(crate) execution_contracts:
         Option<std::sync::Arc<crate::runtime::RelationalRootExecutionContracts>>,
     pub(crate) batch_count: usize,
-    pub(crate) strategy_commit_artifacts:
-        Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
-    pub(crate) strategy_bulk_mutation_batch:
-        Option<crate::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch>,
     pub(crate) validation_complexity_delta: crate::performance::data::RuntimeComplexityCounters,
 }
 
@@ -63,10 +59,6 @@ impl std::fmt::Debug for ValidatedRelationalProposal {
             .field(
                 "validated_against_version",
                 &self.state.validated_against_version,
-            )
-            .field(
-                "has_strategy_decoration",
-                &self.state.strategy_commit_artifacts.is_some(),
             )
             .finish_non_exhaustive()
     }
@@ -124,12 +116,6 @@ impl ValidatedRelationalProposal {
         &self,
     ) -> &crate::mvcc::transaction::footprint::RelationalTransactionFootprint {
         &self.state.prepared.footprint
-    }
-
-    pub fn strategy_commit_artifacts(
-        &self,
-    ) -> Option<&crate::commit_strategies::data::StrategyCommitArtifactBundle> {
-        self.state.strategy_commit_artifacts.as_ref()
     }
 
     pub fn proposal_identity(

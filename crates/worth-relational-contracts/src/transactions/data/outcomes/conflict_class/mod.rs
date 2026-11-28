@@ -77,36 +77,6 @@ impl RelationEndpointUpdateMissingState {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum BulkImportRowDomain {
-    Entity,
-    Relation,
-}
-
-impl BulkImportRowDomain {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::Entity => "entity",
-            Self::Relation => "relation",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum BulkImportStage {
-    EntityCreate,
-    RelationCreate,
-}
-
-impl BulkImportStage {
-    pub const fn label(self) -> &'static str {
-        match self {
-            Self::EntityCreate => "bulk_entity_stage_import",
-            Self::RelationCreate => "bulk_relation_stage_import",
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ConflictClass {
     #[serde(skip)]
@@ -166,11 +136,6 @@ pub enum ConflictClass {
         relation_id: crate::identity::data::RelationId,
         intent_kind_id: crate::identity::data::KindId,
         authoritative_kind_id: crate::identity::data::KindId,
-    },
-    BulkImportDomainMismatch {
-        expected: BulkImportRowDomain,
-        actual: BulkImportRowDomain,
-        stage: BulkImportStage,
     },
     EntityAuthoritativeAspectStateDenied {
         kind_id: crate::identity::data::KindId,

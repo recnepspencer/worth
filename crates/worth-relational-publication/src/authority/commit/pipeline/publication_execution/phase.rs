@@ -153,8 +153,6 @@ pub(super) fn finalize_publication_phase(
     phase_timing.publication_compaction_micros = publication_phase_timing.compaction_micros;
     phase_timing.publication_bundle_publish_micros = publication_phase_timing.bundle_publish_micros;
     phase_timing.publication_retention_pass_micros = publication_phase_timing.retention_pass_micros;
-    phase_timing.publication_post_commit_consumer_micros =
-        publication_phase_timing.post_commit_consumer_micros;
 
     FinalizedPublicationPhase {
         positioned_commit,

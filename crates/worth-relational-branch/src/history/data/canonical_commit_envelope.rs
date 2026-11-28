@@ -75,7 +75,6 @@ pub mod draft;
 pub mod readmission_memory;
 pub use readmission_memory::{
     CanonicalEnvelopeReadmissionMemory, CodecDeclarationsReadmissionMemory,
-    StrategyReadmissionMemory,
 };
 pub mod wire_projection;
 pub use draft::CanonicalCommitEnvelopeDraft;
@@ -188,7 +187,6 @@ pub struct CanonicalCommitEnvelopeBody {
     pub(crate) branch_cell_checkpoint:
         Option<crate::branch::reference_checkpoint_data::RelationalBranchCellCheckpoint>,
     pub authority_kind: CanonicalCommitAuthorityKind,
-    pub strategy_artifacts: Option<crate::commit_strategies::data::StrategyCommitArtifactBundle>,
     pub schema_version: SchemaVersionId,
     pub schema_authority: SchemaAuthoritySnapshot,
     pub merged_plan: MergedCommitPlan,

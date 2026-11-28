@@ -78,7 +78,6 @@ source currentness or publication authority.
   - `schema_setup(...)`
   - `storage_setup(...)`
   - `durability_setup(...)`
-  - `strategy_setup(...)`
 - `build_durable(medium)` to make every commit durable in a
   `RelationalDurableMedium` before it is live; the medium moves into that one
   runtime. `build()` builds a memory-only runtime
@@ -266,8 +265,6 @@ must still use the snapshot-bearing receiver and their own READ admission.
 These are real public capabilities, but not the default first-contact story:
 
 - `runtime.validation()`
-- `runtime.compiled_artifacts()`
-- `runtime.compiled_artifacts_authority()`
 - `runtime.retention()`
 - `runtime.index_access()`
 - `runtime.index_authority()`
@@ -275,8 +272,6 @@ These are real public capabilities, but not the default first-contact story:
 - `runtime.durability()` (including `recovery_plan_from_source(...)` for
   reopening from a durable medium)
 - `runtime.durability_authority()`
-- `runtime.commit_strategies()`
-- `runtime.commit_strategies_authority()`
 - `runtime.merge()`
 - `runtime.replay_authority()`
 
@@ -303,7 +298,6 @@ The standalone library surface now uses the job-shaped runtime names directly:
 - `history_authority()`
 - `replay()`
 - `validation()`
-- `compiled_artifacts()`
 - `retention()`
 - `durability()`
 - `merge()`

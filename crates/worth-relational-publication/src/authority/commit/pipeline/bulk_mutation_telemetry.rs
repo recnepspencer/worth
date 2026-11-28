@@ -4,7 +4,6 @@ use contracts::transactions::data::intents::mutation_intent::MutationIntent;
 use contracts::transactions::data::intents::mutation_intent::RelationMutationIntent;
 use contracts::transactions::data::outcomes::plan_artifacts::MergedCommitPlan;
 use contracts::transactions::data::primitives::BulkMutationLocalityFootprint;
-use contracts::transactions::data::primitives::ProvenanceCompleteBulkMutationBatch;
 use worth_relational_branch::internal_port::runtime::state::subsystems::services::instrumentation::RuntimeInstrumentation;
 use worth_relational_contracts::internal_port as contracts;
 
@@ -30,17 +29,6 @@ pub(super) fn summarize_bulk_mutation_telemetry(
     }
 
     Some(footprint.into_plan_telemetry(worker_batch_count))
-}
-
-pub(super) fn telemetry_from_strategy_batch(
-    batch: &ProvenanceCompleteBulkMutationBatch,
-) -> BulkMutationPlanTelemetry {
-    BulkMutationPlanTelemetry {
-        locality: batch.planned().locality.clone(),
-        normalized_client_key_count: batch.planned().naming.normalized_client_keys.len(),
-        lineage_transition_count: batch.planned().lineage.transitions.len(),
-        provenance_record_count: batch.planned().provenance.worker_batch_names.len(),
-    }
 }
 
 pub(super) fn record_bulk_mutation_telemetry(

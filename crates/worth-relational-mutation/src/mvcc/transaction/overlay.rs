@@ -2,12 +2,14 @@ use super::footprint::RelationalTransactionFootprint;
 use super::index_row::IndexKey;
 use super::index_row::IndexRow;
 use super::index_row::IntentLocation;
+use super::staged_mutations::RelationalTransactionStagedMutations as Staged;
 use super::staging_storage::Author;
 use super::staging_storage::OrderedStore;
+use crate::contracts::identity::data::record_ids::{EntityId, RelationId};
 use crate::contracts::mvcc::transaction::staging::RelationalTransactionStagingDenial as Denial;
 use crate::contracts::symbols::data::client_key::ClientKey;
 use crate::contracts::transactions::data::intents::mutation_intent::{
-    CreateIntent, MutationIntent,
+    CreateIntent, EntityMutationIntent, MutationIntent, RelationMutationIntent,
 };
 use crate::contracts::transactions::data::primitives::{
     CreatedEntityRef, CreatedRelationRef, EntityReference, WorkerIntentBatch,
@@ -49,10 +51,51 @@ impl DetachedRelationalTransactionOverlay {
             .map_err(|_| Denial::InputDirectoryAllocationDenied { requested_batches })
     }
     pub fn stage(&mut self, batch: WorkerIntentBatch, index: OrderedStore<IndexRow>) {
-        self.effective_records.stage(&batch);
         self.batches.push(batch); // System capacity was reserved before publication
         self.index = index;
     }
+    pub fn staged_entity_mutations(&self, id: EntityId) -> Staged<EntityMutationIntent> {
+        let prior = self.effective_records.entities.get(&id);
+        self.extend_staged_history(IndexKey::Entity(id), prior, |intent| match intent {
+            MutationIntent::Entity(intent) => Some(intent),
+            _ => None,
+        })
+    }
+
+    pub fn staged_relation_mutations(&self, id: RelationId) -> Staged<RelationMutationIntent> {
+        let prior = self.effective_records.relations.get(&id);
+        self.extend_staged_history(IndexKey::Relation(id), prior, |intent| match intent {
+            MutationIntent::Relation(intent) => Some(intent),
+            _ => None,
+        })
+    }
+
+    fn extend_staged_history<I: Clone, V>(
+        &self,
+        key: IndexKey,
+        prior: Option<&super::effective_records::RecordProjection<I, V>>,
+        select: impl Fn(&MutationIntent) -> Option<&I>,
+    ) -> Staged<I> {
+        let (mut staged, through_batches) = prior
+            .map(|p| (p.staged.clone(), p.through_batches))
+            .unwrap_or_default();
+        let suffix = self.index.range_by(|row| {
+            row.key.cmp(&key).then_with(|| {
+                if row.location.batch_index < through_batches {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            })
+        });
+        for row in suffix {
+            if let Some(intent) = select(self.intent(row.location)) {
+                staged.push(intent.clone());
+            }
+        }
+        staged
+    }
+
     pub fn batches(&self) -> &[WorkerIntentBatch] {
         &self.batches
     }

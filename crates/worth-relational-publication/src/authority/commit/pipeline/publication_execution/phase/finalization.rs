@@ -75,15 +75,11 @@ pub(super) fn finalize_published_commit(
         published_snapshot_slot,
         phase_timing,
     );
-    consume_post_commit_artifacts(
-        &inputs.publication,
-        PostCommitArtifactInput {
-            commit_id,
-            snapshot_id,
-            branch_id,
-            commit_reference,
-        },
-        phase_timing,
+    inputs.publication.record_publication_diagnostics(
+        commit_id,
+        snapshot_id,
+        branch_id,
+        &commit_reference.parents,
     );
 }
 
@@ -159,26 +155,4 @@ fn publish_artifacts(
         publication.publish_artifacts(version_id, artifacts, patch_position, basis, slot);
     timing.bundle_publish_micros = elapsed_since(started).as_micros() as u64;
     snapshot_id
-}
-
-struct PostCommitArtifactInput<'a> {
-    commit_id: contracts::history::data::coordinates::CommitId,
-    snapshot_id: contracts::snapshots::data::coordinates::SnapshotId,
-    branch_id: &'a contracts::history::data::coordinates::BranchId,
-    commit_reference: &'a contracts::history::data::commit_receipt::RelationalCommitReceipt,
-}
-
-fn consume_post_commit_artifacts(
-    publication: &crate::publication::authority::PublicationAuthority<'_>,
-    input: PostCommitArtifactInput<'_>,
-    timing: &mut crate::authority::commit::phases::finalize::PublicationPhaseTiming,
-) {
-    let started = monotonic_now();
-    publication.consume_post_commit_artifacts(
-        input.commit_id,
-        input.snapshot_id,
-        input.branch_id.clone(),
-        &input.commit_reference.parents,
-    );
-    timing.post_commit_consumer_micros = elapsed_since(started).as_micros() as u64;
 }

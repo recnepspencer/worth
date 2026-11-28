@@ -44,78 +44,14 @@ fn invalid_main_branch_and_symbol_configuration_refuse_native_construction() {
     ));
 }
 
-fn strategy() -> CommitStrategyRegistration {
-    CommitStrategyRegistration::new(CommitStrategyDescriptor::new(
-        CommitStrategyId(41),
-        CommitStrategySemanticName::new("strategy.intent.reconcile"),
-        CommitStrategyFamilyName::new("strategy.intent"),
-        CommitStrategyVersion::new(1, 0),
-        StrategyIntentName::new("reconcile.desired.state"),
-        StrategyInputSchemaName::new("intent.reconcile.input.v1"),
-        StrategyInputSchemaVersion(1),
-        StrategyOutputSchemaName::new("intent.reconcile.output.v1"),
-        StrategyReadContract {
-            scope_class: StrategyReadScopeClass::ExplicitTargetsOnly,
-            locality_class: StrategyReadLocalityClass::SinglePartition,
-            traversal_basis: StrategyTraversalBasis::NoTraversal,
-            packet_contract: StrategyPacketContract::ProjectionOnly,
-            cost_class: StrategyReadCostClass::ORequestedSurface,
-        },
-        PersistentArtifactName::new("strategy.intent.reconcile"),
-    ))
-    .expect("valid strategy registration")
-}
-
-#[test]
-fn duplicate_strategy_descriptor_is_refused() {
-    let registration = strategy();
-    assert!(matches!(
-        RelationalRuntimeBuilder::new()
-            .commit_strategy(registration.clone())
-            .commit_strategy(registration)
-            .build(),
-        Err(Denial::CommitStrategy(
-            crate::commit_strategies::DuplicateCommitStrategyRegistration::Id {
-                id: CommitStrategyId(41),
-            }
-        ))
-    ));
-}
-
-#[test]
-fn executor_registration_refuses_before_dispatch() {
-    use crate::commit_strategies::strategies::IntentReconciliationStrategy;
-    use crate::commit_strategies::CommitStrategyExecutionRegistryError as Cause;
-    let strategy = strategy();
-    let binding = IntentReconciliationStrategy::execution_registration(strategy.descriptor());
-    assert!(matches!(
-        RelationalRuntimeBuilder::new()
-            .commit_strategy_executor(binding.clone())
-            .build(),
-        Err(Denial::CommitStrategyExecutor(
-            Cause::MissingDescriptorRegistration { .. }
-        ))
-    ));
-    assert!(matches!(
-        RelationalRuntimeBuilder::new()
-            .commit_strategy(strategy)
-            .commit_strategy_executor(binding.clone())
-            .commit_strategy_executor(binding)
-            .build(),
-        Err(Denial::CommitStrategyExecutor(
-            Cause::DuplicateBinding { .. }
-        ))
-    ));
-}
-
 #[test]
 fn unsupported_declared_invariant_execution_point_refuses_runtime_construction() {
     use crate::validation::data::{
         InvariantCatalog, InvariantExecutionPoint, InvariantRegistration, InvariantRule,
     };
     let catalog = InvariantCatalog {
-        registrations: vec![InvariantRegistration::commit_boundary_blocking(
-            InvariantRule::MaxSnapshotEntities(1),
+        registrations: vec![InvariantRegistration::snapshot_publication_blocking(
+            InvariantRule::MaxMergedIntents(1),
         )],
     };
     let result = crate::facade::runtime::RelationalRuntimeApi::builder()
@@ -126,7 +62,7 @@ fn unsupported_declared_invariant_execution_point_refuses_runtime_construction()
         Err(
             crate::runtime::RelationalRuntimeConstructionDenial::InvariantExecutionPoint {
                 registration: 0,
-                execution_point: InvariantExecutionPoint::CommitBoundary
+                execution_point: InvariantExecutionPoint::SnapshotPublication
             }
         )
     ));

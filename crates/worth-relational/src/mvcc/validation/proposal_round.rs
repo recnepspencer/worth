@@ -46,10 +46,7 @@ impl RelationalPreparationRuntime {
             crate::branch::root_selection::SelectedRelationalBranchState::from_admitted_basis(
                 &basis,
             );
-        let source = RelationalProposalSource::Transaction {
-            lowered: None,
-            strategy: None,
-        };
+        let source = RelationalProposalSource::Transaction;
         crate::storage::residency::probe_head(
             execution,
             &selected.with_symbol_admission(&self.services.symbols),
