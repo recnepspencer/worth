@@ -228,6 +228,7 @@
 //! ```
 
 pub use worth_query_declaration::facade::application_naming::{
+    DiscriminatorScanError, DiscriminatorScanErrorKind,
     ApplicationGroupKind, ApplicationNameDiscriminator, ApplicationNameDiscriminatorDecode,
     ApplicationNameDiscriminatorDecodeDenial, ApplicationNameDiscriminatorDecoder,
     EntityNameSubject, ErasedWorthQueryName, GroupMemberName, IndexedRoleDiscriminator, NameBirth,

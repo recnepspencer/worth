@@ -163,7 +163,7 @@ impl Groups {
                         .insert(
                             *name,
                             NativeMemberKey::Entity(entity),
-                            AggregateMemberRole::Ordinary,
+                            AggregateMemberRole::Interior,
                         )
                         .unwrap();
                 }
@@ -196,7 +196,7 @@ impl Groups {
     fn group_of(&self, member: PersistentNameIdentity) -> AggregateIdentity {
         self.prior
             .iter()
-            .find(|group| group.members.get(&member).is_some())
+            .find(|group| group.members.get(&member.into()).is_some())
             .unwrap()
             .identity
     }

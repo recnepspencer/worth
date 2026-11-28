@@ -1,4 +1,3 @@
-mod cardinality;
 mod deletion;
 mod endpoints;
 mod graph;
@@ -7,15 +6,13 @@ pub use graph::ApplicationRelationGraphLaws;
 mod law_meaning;
 mod minimum;
 mod record;
-mod uniqueness;
 pub(crate) use law_meaning::{ApplicationRelationLawMeaning, ApplicationRelationLawValue};
 pub use minimum::ApplicationRelationMinimumReachability;
 pub use record::{
     ApplicationRelationIntegrityRecord, ApplicationRelationMinimumReachabilityRecord,
 };
-pub use uniqueness::ApplicationRelationUniquenessScope;
+pub use worth_foundational::UniquenessScope as ApplicationRelationUniquenessScope;
 
-pub use cardinality::ApplicationRelationCardinality;
 pub use deletion::ApplicationRelationDeletionPolicy;
 pub use endpoints::{ApplicationRelationCrossContextPolicy, ApplicationRelationEndpoints};
 
@@ -136,3 +133,5 @@ pub(super) fn validate_relation_integrity(
         minimum::validate_minimum_kinds(members)
     }
 }
+
+pub use worth_foundational::RelationCardinality as ApplicationRelationCardinality;

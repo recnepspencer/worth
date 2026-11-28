@@ -81,11 +81,7 @@ fn enforcement_name(value: ApplicationInvariantEnforcement) -> &'static str {
     }
 }
 fn cost_name(value: ApplicationInvariantCostPosture) -> &'static str {
-    match value {
-        ApplicationInvariantCostPosture::Touched => "touched",
-        ApplicationInvariantCostPosture::Partition => "partition",
-        ApplicationInvariantCostPosture::Global => "global",
-    }
+    value.canonical_name()
 }
 fn group_name(value: ApplicationInvariantGroup) -> &'static str {
     match value {

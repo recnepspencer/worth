@@ -2,7 +2,7 @@
 //! `Copy` AABB envelopes for stock checked ordered managed-index adapters.
 use std::cmp::Ordering;
 use worth_query_declaration::facade::application_schema::{
-    CanonicalDate, CanonicalF64, CanonicalTimestamp,
+    CanonicalDate, CanonicalF64, CanonicalTimestamp, FiniteCanonicalF64,
 };
 use worth_query_execution::facade::primary_graph::WorthQueryManagedIndexPredicateSummary;
 
@@ -131,30 +131,28 @@ impl private::Sealed for CanonicalF64 {}
 impl WorthQueryOrderedCoord for CanonicalF64 {
     #[inline]
     fn is_valid_coord(self) -> bool {
-        self.as_f64().is_finite()
+        FiniteCanonicalF64::from_f64(self.as_f64()).is_some()
     }
 
     #[inline]
     fn normalize_endpoint(self) -> Self {
-        if self.as_f64() == 0.0 {
-            Self::from_f64(0.0)
-        } else {
-            self
-        }
+        Self(FiniteCanonicalF64::normalize_zero_bits(self.bits()))
     }
 
     #[inline]
     fn coord_cmp(self, other: Self) -> Ordering {
         let (a, b) = (self.as_f64(), other.as_f64());
+        if let (Some(a), Some(b)) = (
+            FiniteCanonicalF64::from_f64(a),
+            FiniteCanonicalF64::from_f64(b),
+        ) {
+            return a.cmp(&b);
+        }
         match (a.is_nan(), b.is_nan()) {
             (true, true) => Ordering::Equal,
             (true, false) => Ordering::Greater,
             (false, true) => Ordering::Less,
-            (false, false) => {
-                let a = if a == 0.0 { 0.0 } else { a };
-                let b = if b == 0.0 { 0.0 } else { b };
-                a.total_cmp(&b)
-            }
+            (false, false) => a.total_cmp(&b),
         }
     }
 }

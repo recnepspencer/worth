@@ -34,7 +34,7 @@ pub enum DiscriminatorBasisDenialReason {
     UndeclaredEncodedNameReference { raw_digest: [u8; 32] },
     /// Non-empty discriminator bytes failed canonical v1 domain-header or
     /// structural encoding validation.
-    MalformedDiscriminator,
+    MalformedDiscriminator(worth_foundational::DiscriminatorScanError),
     /// A structural-identity discriminator exceeds its wire ceiling.
     UnboundedStructuralDiscriminator { len: usize },
 }

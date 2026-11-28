@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
-use worth_foundational::facade::AspectKey;
+use worth_foundational::{AspectExclusionGroupSpec, AspectKey};
 
 /// Mutually exclusive active aspects of an entity kind.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -10,6 +10,16 @@ pub struct AspectExclusionGroupDeclaration {
     pub aspects: BTreeSet<AspectKey>,
     /// Require one active member. Optional groups also accept zero.
     pub required: bool,
+}
+
+impl From<AspectExclusionGroupSpec<BTreeSet<AspectKey>>> for AspectExclusionGroupDeclaration {
+    fn from(spec: AspectExclusionGroupSpec<BTreeSet<AspectKey>>) -> Self {
+        Self {
+            group_id: spec.group_id,
+            aspects: spec.aspects,
+            required: spec.required,
+        }
+    }
 }
 
 impl AspectExclusionGroupDeclaration {

@@ -4,6 +4,7 @@
 //! `WorthQueryName` handles.
 
 use worth_execution::ExecutionRequest;
+use worth_foundational::scan_name_discriminator_references;
 use worth_query_declaration::facade::application_naming::{
     ApplicationNameDiscriminator, ApplicationNameDiscriminatorEncoder,
     ApplicationNameDiscriminatorValue, NestedDiscriminator, WorthQueryName,
@@ -240,6 +241,7 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
         ("trailing", trailing_byte),
         ("truncated", truncated),
     ] {
+        let expected = scan_name_discriminator_references(&tampered).unwrap_err();
         let key = format!("tamper-{label}");
         let mut tx = begin_staged_tx(&runtime, &key, vec![create_face_intent(&key)]);
         tx.attach_naming_plan(CommitNamingPlan {
@@ -262,7 +264,7 @@ fn naming_encoder_and_relational_scanner_agree_across_nested_pairs_options_and_t
             Some(&LineageNameDenial::InvalidDiscriminatorBasis {
                 scheme_id: FACE_SCHEME_ID.to_owned(),
                 role_path: "cut_piece".to_owned(),
-                reason: DiscriminatorBasisDenialReason::MalformedDiscriminator,
+                reason: DiscriminatorBasisDenialReason::MalformedDiscriminator(expected),
             })
         );
     }

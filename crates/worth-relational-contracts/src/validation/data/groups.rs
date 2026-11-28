@@ -27,12 +27,7 @@ const ALL_INVARIANT_GROUPS: [InvariantGroup; 9] = [
     InvariantGroup::RelationIntegrity,
 ];
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum InvariantCostClass {
-    Touched,
-    Partition,
-    Global,
-}
+pub use worth_foundational::InvariantCostClass;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct InvariantGroupSet {

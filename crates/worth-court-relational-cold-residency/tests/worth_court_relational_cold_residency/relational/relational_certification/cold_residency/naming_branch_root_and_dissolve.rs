@@ -62,7 +62,7 @@ fn tampered_chk24_emptying_single_branch_root_with_other_branch_intact_refuses_c
         "a-grp",
         vec![vec![
             (n_main[0], AggregateMemberRole::Anchor),
-            (n_main[1], AggregateMemberRole::Ordinary),
+            (n_main[1], AggregateMemberRole::Interior),
         ]],
     );
     let branch_b = BranchId("branch-b".into());
@@ -78,7 +78,7 @@ fn tampered_chk24_emptying_single_branch_root_with_other_branch_intact_refuses_c
         "b-grp",
         vec![vec![
             (n_b[0], AggregateMemberRole::Anchor),
-            (n_b[1], AggregateMemberRole::Ordinary),
+            (n_b[1], AggregateMemberRole::Interior),
         ]],
     );
     let (c1, source) = capture_external_checkpoint(request, &producer);
@@ -171,7 +171,7 @@ fn dissolve_only_commit_with_damaged_member_owner_refuses_before_append() {
             let role = if i == 0 {
                 AggregateMemberRole::Anchor
             } else {
-                AggregateMemberRole::Ordinary
+                AggregateMemberRole::Interior
             };
             (n, role)
         })

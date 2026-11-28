@@ -153,7 +153,7 @@ fn valid_group_name_schemes_install_and_expose_continuity_metadata() {
     );
     assert_eq!(
         room.member_role("void"),
-        ApplicationGroupMemberRole::Ordinary
+        ApplicationGroupMemberRole::Interior
     );
     assert_eq!(
         room.name_scheme().subject_kind(),

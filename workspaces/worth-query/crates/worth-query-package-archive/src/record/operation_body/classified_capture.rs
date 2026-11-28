@@ -3,9 +3,8 @@ use super::{
     ApplicationFieldBindingLocus as Locus, ApplicationOperationBodyCreatedField as Step,
     BinaryEncodingSink, BinaryInput, Denial, Kind, WorthQueryPortableTypeIdentity,
 };
-use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence as Presence, ApplicationOperationBodyCaptureRole as Role,
-};
+use crate::record::application_schema::wire_vocabulary::{decode_presence, write_presence};
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyCaptureRole as Role;
 
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, step: &Step) -> Result<(), Denial> {
     let Step::CapturedScopeField {
@@ -22,10 +21,7 @@ pub(super) fn write(output: &mut dyn BinaryEncodingSink, step: &Step) -> Result<
     output.text(source.entity())?;
     output.text(source.aspect())?;
     output.text(source.field())?;
-    output.u16(match source_presence {
-        Presence::Required => 1,
-        Presence::Optional => 2,
-    })?;
+    write_presence(output, *source_presence)?;
     output.u16(match role {
         Role::Subject => 1,
         Role::AuditContext => 2,
@@ -39,11 +35,7 @@ pub(super) fn decode(
 ) -> Result<Step, Denial> {
     let scalar_family = super::super::foundational_aspect::decode_scalar_type(input)?;
     let source = Locus::new(input.text()?, input.text()?, input.text()?);
-    let source_presence = match input.u16()? {
-        1 => Presence::Required,
-        2 => Presence::Optional,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
+    let source_presence = decode_presence(input)?;
     let role = match input.u16()? {
         1 => Role::Subject,
         2 => Role::AuditContext,
@@ -63,6 +55,7 @@ pub(super) fn decode(
 mod tests {
     use super::*;
     use worth_query_declaration::archive_decode_authority::ARCHIVE_DECODE;
+    use worth_query_declaration::facade::application_schema::ApplicationFieldPresence as Presence;
     #[test]
     fn unknown_capture_role_or_source_presence_never_becomes_a_default() {
         let field = Locus::new("Evidence", "Facts", "Text");

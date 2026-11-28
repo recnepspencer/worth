@@ -3,8 +3,8 @@ use super::RegisteredProjectedMemberDomain;
 use super::{ProjectedMemberDomainDenial as Denial, ProjectedMemberDomainHandle as Handle};
 use super::{ProjectedMemberDomainIdentity as Identity, ProjectedMemberDomainParts as Parts};
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::schema::identifier;
 use std::sync::Arc;
+use worth_foundational::{is_valid_role_identifier, is_valid_simple_identifier};
 
 impl RelationalSchemaRegistry {
     /// Validate the receiving carrier and cases before retaining an original
@@ -37,8 +37,8 @@ impl RelationalSchemaRegistry {
         additions: Vec<Parts>,
     ) -> Result<Self, Denial> {
         for parts in additions {
-            if !identifier::is_simple(&parts.identity.name)
-                || !identifier::is_dotted(&parts.identity.schema.0)
+            if !is_valid_simple_identifier(&parts.identity.name)
+                || !is_valid_role_identifier(&parts.identity.schema.0)
             {
                 return Err(Denial::InvalidIdentity);
             }
@@ -53,7 +53,10 @@ impl RelationalSchemaRegistry {
             if parts.cases.is_empty() {
                 return Err(Denial::EmptyCases);
             }
-            if parts.cases.iter().any(|case| !identifier::is_simple(case))
+            if parts
+                .cases
+                .iter()
+                .any(|case| !is_valid_simple_identifier(case))
                 || parts.cases.windows(2).any(|pair| pair[0] >= pair[1])
             {
                 return Err(Denial::NoncanonicalCases);

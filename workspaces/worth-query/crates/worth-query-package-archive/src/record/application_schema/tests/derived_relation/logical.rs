@@ -77,7 +77,7 @@ fn logical_recipe_and_components_have_distinct_canonical_transport_and_real_carr
     for member in record.members() {
         let bytes = encode_member(member);
         match member {
-            Member::DerivedRelation { .. } => assert_eq!(&bytes[..4], &[0, 47, 0, 1]),
+            Member::DerivedRelation { .. } => assert_eq!(&bytes[..4], &[0, 47, 0, 3]),
             Member::DerivedComponentSet { .. } => assert_eq!(&bytes[..4], &[0, 46, 0, 1]),
             _ => {}
         }
@@ -109,7 +109,7 @@ fn logical_recipe_and_components_have_distinct_canonical_transport_and_real_carr
             ..
         })
     ));
-    for (tag, version) in [(46u16, 2u16), (47, 3)] {
+    for (tag, version) in [(46u16, 2u16), (47, 4)] {
         let bytes = [tag.to_be_bytes(), version.to_be_bytes()].concat();
         assert_eq!(
             try_decode_member(&bytes).unwrap_err().kind(),
@@ -119,43 +119,30 @@ fn logical_recipe_and_components_have_distinct_canonical_transport_and_real_carr
 }
 
 #[test]
-fn legacy_recipe_bytes_stay_exact_and_cannot_be_readmitted_under_extended_tag() {
-    let legacy = derived("Legacy", vec![source(SourceKind::Stored, "Edge")]);
-    let mut expected = 41u16.to_be_bytes().to_vec();
-    for name in ["Legacy", "E", "E"] {
-        text(&mut expected, name);
+fn entity_paths_use_the_same_versioned_wire_grammar() {
+    let relation = derived("Path", vec![source(SourceKind::Stored, "Edge")]);
+    let mut expected = vec![0, 47, 0, 3];
+    text(&mut expected, "Path");
+    for _ in 0..2 {
+        expected.extend_from_slice(&1u16.to_be_bytes());
+        text(&mut expected, "E");
     }
     expected.extend_from_slice(&1u32.to_be_bytes());
     expected.extend_from_slice(&1u16.to_be_bytes());
     expected.extend_from_slice(&1u16.to_be_bytes());
-    for name in ["Edge", "E", "E"] {
-        text(&mut expected, name);
-    }
-    let law_offset = expected.len();
-    // Same-context, self allowed, six absent bounds, acyclic, then four absences.
-    for value in [3u16, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0] {
-        expected.extend_from_slice(&value.to_be_bytes());
-    }
-    assert_eq!(encode_member(&legacy), expected);
-    assert_eq!(decode_member(&expected), legacy);
-    let mut alternate = vec![0, 47, 0, 1];
-    text(&mut alternate, "Legacy");
+    text(&mut expected, "Edge");
     for _ in 0..2 {
-        alternate.extend_from_slice(&1u16.to_be_bytes());
-        text(&mut alternate, "E");
+        expected.extend_from_slice(&1u16.to_be_bytes());
+        text(&mut expected, "E");
     }
-    alternate.extend_from_slice(&1u32.to_be_bytes());
-    alternate.extend_from_slice(&1u16.to_be_bytes());
-    alternate.extend_from_slice(&1u16.to_be_bytes());
-    text(&mut alternate, "Edge");
-    for _ in 0..2 {
-        alternate.extend_from_slice(&1u16.to_be_bytes());
-        text(&mut alternate, "E");
+    for word in [3u16, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0] {
+        expected.extend_from_slice(&word.to_be_bytes());
     }
-    alternate.extend_from_slice(&expected[law_offset..]);
+    assert_eq!(encode_member(&relation), expected);
+    assert_eq!(decode_member(&expected), relation);
     assert_eq!(
-        try_decode_member(&alternate).unwrap_err().kind(),
-        Kind::InvalidRecordShape
+        try_decode_member(&41u16.to_be_bytes()).unwrap_err().kind(),
+        Kind::UnsupportedRecordVariant
     );
 }
 

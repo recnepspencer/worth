@@ -365,14 +365,14 @@ fn tampered_chk24_stripping_naming_index_or_group_pages_refuses_corrupt_checkpoi
     );
     let g1 = vec![vec![
         (n1[0], AggregateMemberRole::Anchor),
-        (n1[1], AggregateMemberRole::Ordinary),
+        (n1[1], AggregateMemberRole::Interior),
     ]];
     publish_group_partition(request, &producer, &main, e1[0], "p1-4-g1", g1);
     let basis_c1 = observe_branch(&producer, &main);
     let (_, e2, n2) = create_named_entities(request, &producer, &main, &["p1-4-c".into()]);
     let g2 = vec![vec![
         (n1[0], AggregateMemberRole::Anchor),
-        (n2[0], AggregateMemberRole::Ordinary),
+        (n2[0], AggregateMemberRole::Interior),
     ]];
     publish_group_partition(request, &producer, &main, e2[0], "p1-4-g2", g2);
     let child = BranchId("p1-4-hist-child".into());

@@ -14,7 +14,7 @@ const NAMES: [u8; 10] = [41, 7, 230, 19, 88, 3, 150, 64, 120, 201];
 
 fn role(code: u8) -> Role {
     match code % 3 {
-        0 => Role::Ordinary,
+        0 => Role::Interior,
         1 => Role::Anchor,
         _ => Role::Boundary,
     }

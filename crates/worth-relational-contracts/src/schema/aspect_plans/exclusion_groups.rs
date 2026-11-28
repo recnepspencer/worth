@@ -25,8 +25,8 @@ pub(super) fn canonicalize(
         if !matches!(domain, RegistrationDomain::Entity) {
             return Err(invalid("only entity kinds may declare an exclusion group"));
         }
-        if group.group_id.trim().is_empty() {
-            return Err(invalid("group ID must not be empty"));
+        if !worth_foundational::is_valid_simple_identifier(&group.group_id) {
+            return Err(invalid("group ID must be a simple identifier"));
         }
         if previous_id == Some(group.group_id.as_str()) {
             return Err(invalid("duplicate group ID"));

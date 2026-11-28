@@ -91,7 +91,7 @@ fn anchor_groups(
 ) -> Vec<Vec<(PersistentNameIdentity, AggregateMemberRole)>> {
     let role = |(i, &name): (usize, &PersistentNameIdentity)| match i {
         0 => (name, AggregateMemberRole::Anchor),
-        _ => (name, AggregateMemberRole::Ordinary),
+        _ => (name, AggregateMemberRole::Interior),
     };
     names
         .chunks(GROUP_MEMBERS)

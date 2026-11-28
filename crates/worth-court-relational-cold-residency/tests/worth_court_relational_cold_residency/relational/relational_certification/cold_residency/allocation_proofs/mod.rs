@@ -197,7 +197,7 @@ fn cold_reopen_and_point_ops_scale_sublinearly_1x_vs_10x() {
             created_e[0],
             vec![vec![
                 (built.sample_name, AggregateMemberRole::Anchor),
-                (created_n[0], AggregateMemberRole::Ordinary),
+                (created_n[0], AggregateMemberRole::Interior),
             ]],
         );
     };

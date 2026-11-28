@@ -1,18 +1,18 @@
 -- Production Rust this model mirrors (`python3 specs/proof_mirror_check.py`):
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:59-70 sha256:f9b4e5561391eb67fa2cc865c564d002615ef24f7c6f23bde399929aac0fe4ab
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:81-90 sha256:c3d4618696ab9de182db075ec11cb844992f80a0f1c71f2c4044e5eaebf3b89c
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:141-145 sha256:2d6ed773be462cf9a81d73e39ed9ffb22ce2d5b032def9a819ce7dcc05c4f14b
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:217-223 sha256:2aed67c42827c8ddea5f38b7c4d106f51918e4da89fda76f8bd6f78631bba0b7
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:225-241 sha256:99e80b6afabe7b329afa110a0192463d95e1bcaf2ef57a5ba0a05603776817bb
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:243-252 sha256:1aab946c6a5465755581296e8769e8f6110f44aa22f0b72ac5df7b273186d0cd
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:265-271 sha256:57e9402a302e989bb29d70d7b217b7c853e43219397dfe9388aa2c8f50f6dfdb
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:283-292 sha256:6b14df98f96d2fbfeceea3ef2e2b254b361c69c0474f670c54f512186723b6b6
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:309-320 sha256:e46b5dd5a743b59af7b1160b0f39da2ba0db50fbfd9825fa09b266b4a3364b5f
--- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:326-336 sha256:2dcb321f107b6699f3990ac786a41964b1326a744682e5d76f4605e46967baf7
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:57-68 sha256:f9b4e5561391eb67fa2cc865c564d002615ef24f7c6f23bde399929aac0fe4ab
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:79-88 sha256:c3d4618696ab9de182db075ec11cb844992f80a0f1c71f2c4044e5eaebf3b89c
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:139-143 sha256:2d6ed773be462cf9a81d73e39ed9ffb22ce2d5b032def9a819ce7dcc05c4f14b
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:215-221 sha256:2aed67c42827c8ddea5f38b7c4d106f51918e4da89fda76f8bd6f78631bba0b7
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:223-239 sha256:99e80b6afabe7b329afa110a0192463d95e1bcaf2ef57a5ba0a05603776817bb
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:241-250 sha256:1aab946c6a5465755581296e8769e8f6110f44aa22f0b72ac5df7b273186d0cd
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:263-269 sha256:57e9402a302e989bb29d70d7b217b7c853e43219397dfe9388aa2c8f50f6dfdb
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:281-290 sha256:6b14df98f96d2fbfeceea3ef2e2b254b361c69c0474f670c54f512186723b6b6
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:307-318 sha256:e46b5dd5a743b59af7b1160b0f39da2ba0db50fbfd9825fa09b266b4a3364b5f
+-- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator.rs:324-334 sha256:2dcb321f107b6699f3990ac786a41964b1326a744682e5d76f4605e46967baf7
 -- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator/wire_bound.rs:19-32 sha256:f871de740f8fcfc3cc138d25ab6a66e943d959a58b4b9e4c45d59d281af37dba
 -- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator/wire_bound.rs:53-55 sha256:962c40bdcec781f9f04fd0906238547b3b227303c5e52b618c67c838361eaac6
 -- proof-mirror: workspaces/worth-query/crates/worth-query-declaration/src/application_naming/discriminator/wire_bound.rs:84-90 sha256:aab6a2e9b1e0e755cfc0a3426d9f4deb03205e24e7d9e49bc72e18a74a4e2e58
--- proof-mirror: crates/worth-relational-contracts/src/lineage/data/naming.rs:61-68 sha256:f17cf96498b9f033567f50709a69677a4369b4a2830a31649feda5b0348358d4
+-- proof-mirror: crates/worth-relational-contracts/src/lineage/data/naming.rs:55-62 sha256:f17cf96498b9f033567f50709a69677a4369b4a2830a31649feda5b0348358d4
 
 /-!
 # Bounded discriminator wire size (Phase 7B-2, RULES §4 layer 1)

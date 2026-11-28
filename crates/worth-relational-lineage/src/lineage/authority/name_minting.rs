@@ -21,7 +21,7 @@ use crate::contracts::lineage::data::naming_denial::{
 };
 use crate::contracts::lineage::data::postures::LineageBasisView;
 
-use super::discriminator_scan::extract_embedded_name_refs;
+use worth_foundational::scan_name_discriminator_references;
 
 /// Wire ceiling on a structural-identity birth's discriminator: its names
 /// are told apart by the discriminator alone, which stays bounded at any
@@ -225,13 +225,14 @@ fn verify_discriminator_references(
     }
     // 1. Scan canonical discriminator bytes so callers cannot smuggle raw
     //    `TAG_NAME_REF` digests without declaring them in `referenced_names`.
-    let embedded = extract_embedded_name_refs(&request.canonical_discriminator).map_err(|()| {
-        LineageNameDenial::InvalidDiscriminatorBasis {
-            scheme_id: request.scheme_id.clone(),
-            role_path: request.role_path.clone(),
-            reason: DiscriminatorBasisDenialReason::MalformedDiscriminator,
-        }
-    })?;
+    let embedded =
+        scan_name_discriminator_references(&request.canonical_discriminator).map_err(|error| {
+            LineageNameDenial::InvalidDiscriminatorBasis {
+                scheme_id: request.scheme_id.clone(),
+                role_path: request.role_path.clone(),
+                reason: DiscriminatorBasisDenialReason::MalformedDiscriminator(error),
+            }
+        })?;
     let declared_digests: BTreeSet<[u8; 32]> = request
         .referenced_names
         .iter()

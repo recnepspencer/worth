@@ -67,7 +67,6 @@ mod effect_binding;
 mod effect_marker_identity;
 mod external_effect_correlation_family;
 mod external_effect_protocol;
-mod field_presence;
 mod field_reference;
 pub mod fragment;
 mod graph_member;
@@ -228,7 +227,6 @@ pub use effect_binding::{
 pub use effect_marker_identity::ApplicationEffectMarkerIdentity;
 pub use external_effect_correlation_family::WorthQueryExternalEffectCorrelationFamily;
 pub use external_effect_protocol::ApplicationExternalEffectProtocol;
-pub use field_presence::ApplicationFieldPresence;
 pub use field_reference::ApplicationEntityMarkerIdentity;
 pub use inbound_occurrence::{
     ApplicationInboundOccurrenceBinding, ApplicationInboundOccurrenceLimits,
@@ -366,3 +364,5 @@ pub use values::{
 };
 pub use worth_foundational::facade::AspectValue as ApplicationValue;
 pub use worth_foundational::facade::{AspectContractRevision, AspectIdentity};
+
+pub use worth_foundational::FieldRequirement as ApplicationFieldPresence;

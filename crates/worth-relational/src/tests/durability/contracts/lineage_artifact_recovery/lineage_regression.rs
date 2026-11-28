@@ -124,7 +124,7 @@ fn tail_lineage_commit_and_branch_cross_splices_deny() {
 /// A canonical frame, with valid identities, retiring a group no branch held.
 fn retiring_a_never_live_group() -> Vec<u8> {
     let group = AggregateIdentity::from_bytes([0x47; 32]);
-    let id = AggregateGroupSchemeId::new("loop").expect("a valid scheme id");
+    let id = AggregateGroupSchemeId::new("test.loop").expect("a valid scheme id");
     let committed = CommittedGroupTransition {
         kind: GroupTransitionKind::Partition,
         scheme: AggregateGroupScheme::new(id, AggregateContinuityRule::Anchor),

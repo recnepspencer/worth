@@ -147,6 +147,7 @@ fn write_target_predicate(
     output.u8(match target.presence() {
         ApplicationFieldPresence::Required => 0,
         ApplicationFieldPresence::Optional => 1,
+        ApplicationFieldPresence::Defaulted => 2,
     })?;
     match target.expected() {
         ApplicationQueryPredicateExpected::Parameter(parameter) => {
@@ -179,6 +180,7 @@ fn decode_target_predicate(
     let presence = match input.u8()? {
         0 => ApplicationFieldPresence::Required,
         1 => ApplicationFieldPresence::Optional,
+        2 => ApplicationFieldPresence::Defaulted,
         _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
     };
     match input.u8()? {

@@ -27,7 +27,7 @@ fn simultaneous_live_groups_claiming_one_anchor_refuse_naming_both() {
     for world in worlds(&[10, 11, 12, 1, 30]) {
         let prior = detached_anchor(&world);
         let before = detached_anchor(&world);
-        let keeper: Spec<'_> = &[(11, B), (12, B), (1, Role::Ordinary)];
+        let keeper: Spec<'_> = &[(11, B), (12, B), (1, Role::Interior)];
         let fresh: Spec<'_> = &[(10, B), (30, B)];
         for order in [[keeper, fresh], [fresh, keeper]] {
             assert_eq!(
@@ -85,10 +85,11 @@ fn unrelated_birth_never_inherits_a_dissolving_or_merging_group_name() {
 
 #[test]
 fn scheme_ids_follow_the_declaration_grammar() {
-    for lawful in ["cad.Space.v1", "cad.loop", "a", "worth.example.face.v1"] {
+    for lawful in ["cad.Space.v1", "cad.loop", "例.面", "worth.example.face.v1"] {
         assert!(AggregateGroupSchemeId::new(lawful).is_ok(), "{lawful}");
     }
     for unlawful in [
+        "a",
         "",
         "...",
         ".a..b.",
@@ -114,41 +115,41 @@ fn malformed_states_refuse_with_the_true_subject() {
     let world = World::new(&[1, 2, 3], 0, 1, 1);
     let none = BTreeSet::new();
     assert_eq!(
-        world.run(Rule::Anchor, &[], &none, &[&[(1, Role::Ordinary)], &[]]),
+        world.run(Rule::Anchor, &[], &none, &[&[(1, Role::Interior)], &[]]),
         Err(Denial::EmptyGroup)
     );
-    let overlap: [Spec<'_>; 2] = [&[(1, Role::Ordinary)], &[(1, Role::Anchor)]];
+    let overlap: [Spec<'_>; 2] = [&[(1, Role::Interior)], &[(1, Role::Anchor)]];
     assert_eq!(
         world.run(Rule::Anchor, &[], &none, &overlap),
         Err(Denial::OverlappingMember { name: name(1) })
     );
-    let mut forged = world.born(Rule::Anchor, &[&[(1, Role::Ordinary)]]);
+    let mut forged = world.born(Rule::Anchor, &[&[(1, Role::Interior)]]);
     forged[0].anchor = name(2);
     let identity = forged[0].identity;
     assert_eq!(
         world.run(Rule::Anchor, &forged, &none, &[]),
         Err(Denial::PriorIdentityMismatch { identity })
     );
-    let mut unsourced = world.born(Rule::Anchor, &[&[(1, Role::Ordinary)]]);
+    let mut unsourced = world.born(Rule::Anchor, &[&[(1, Role::Interior)]]);
     unsourced[0].sources = vec![id(Rule::Anchor, 3)];
     assert_eq!(
         world.run(Rule::Anchor, &unsourced, &none, &[]),
         Err(Denial::PriorIdentityMismatch { identity })
     );
-    let live = world.born(Rule::Anchor, &[&[(1, Role::Ordinary)]]);
+    let live = world.born(Rule::Anchor, &[&[(1, Role::Interior)]]);
     assert_eq!(
         world.run(Rule::Anchor, &live, &BTreeSet::from([identity]), &[]),
         Err(Denial::RetiredIdentityLive { identity })
     );
     let mut twin = AggregateGroupMembers::new();
     let carrier = NativeMemberKey::Entity(EntityId::new(PartitionId::new(1), 0, 1));
-    twin.insert(name(1), carrier.clone(), Role::Ordinary)
+    twin.insert(name(1), carrier.clone(), Role::Interior)
         .unwrap();
     assert_eq!(
-        twin.insert(name(1), carrier.clone(), Role::Ordinary),
+        twin.insert(name(1), carrier.clone(), Role::Interior),
         Err(Denial::DuplicateMemberName { name: name(1) })
     );
-    twin.insert(name(2), carrier, Role::Ordinary).unwrap();
+    twin.insert(name(2), carrier, Role::Interior).unwrap();
     assert_eq!(
         AggregateGroupNamingAuthority::transition(&scheme(Rule::Anchor), &[], &none, vec![twin]),
         Err(Denial::DuplicateCarrier { name: name(2) })
@@ -161,7 +162,7 @@ fn non_canonical_prior_sources_refuse_without_hashing() {
     let (a, b) = (id(Rule::Anchor, 3), id(Rule::Anchor, 4));
     let (low, high) = (a.min(b), a.max(b));
     for sources in [vec![high, low], vec![low, low]] {
-        let mut prior = world.born(Rule::Anchor, &[&[(1, Role::Ordinary)]]);
+        let mut prior = world.born(Rule::Anchor, &[&[(1, Role::Interior)]]);
         let identity = prior[0].identity;
         prior[0].sources = sources;
         assert_eq!(
@@ -169,7 +170,7 @@ fn non_canonical_prior_sources_refuse_without_hashing() {
                 Rule::Anchor,
                 &prior,
                 &BTreeSet::new(),
-                &[&[(1, Role::Ordinary)]]
+                &[&[(1, Role::Interior)]]
             ),
             Err(Denial::PriorIdentityMismatch { identity })
         );

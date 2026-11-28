@@ -152,8 +152,9 @@ impl ApplicationDerivedRelationExpression {
         self
     }
 
-    /// Whether the exact old tag41 grammar can represent this expression.
-    pub fn is_legacy_shape(&self) -> bool {
+    /// Whether the expression only composes, reverses or filters entity paths.
+    /// These operations require no composite-source evaluation for endpoint reads.
+    pub fn is_entity_path(&self) -> bool {
         self.nodes.iter().all(|node| match node {
             ApplicationDerivedRelationNode::Source(source) => {
                 source.from.entity().is_some() && source.to.entity().is_some()

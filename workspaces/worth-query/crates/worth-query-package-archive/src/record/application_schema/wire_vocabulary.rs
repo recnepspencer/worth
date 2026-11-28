@@ -68,6 +68,7 @@ pub(in crate::record) fn write_presence(
     output.u16(match value {
         ApplicationFieldPresence::Required => 1,
         ApplicationFieldPresence::Optional => 2,
+        ApplicationFieldPresence::Defaulted => 3,
     })
 }
 pub(in crate::record) fn decode_presence(
@@ -77,6 +78,7 @@ pub(in crate::record) fn decode_presence(
     match input.u16()? {
         1 => Ok(ApplicationFieldPresence::Required),
         2 => Ok(ApplicationFieldPresence::Optional),
+        3 => Ok(ApplicationFieldPresence::Defaulted),
         _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
     }
 }

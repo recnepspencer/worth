@@ -288,7 +288,7 @@ mod tests {
         ));
         let ev = |id, c, kind, src, tgt| unnamed_event(id, &main, CommitId(c), kind, src, tgt);
         let scheme = AggregateGroupScheme::new(
-            AggregateGroupSchemeId::new("s").unwrap(),
+            AggregateGroupSchemeId::new("test.s").unwrap(),
             AggregateContinuityRule::Anchor,
         );
         let mk_grp = |g: u8, retired: Option<u8>| {

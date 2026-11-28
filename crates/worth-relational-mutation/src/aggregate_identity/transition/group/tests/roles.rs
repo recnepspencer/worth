@@ -14,11 +14,11 @@ fn step(
 fn demoted_producer_hands_off_at_once_and_the_repeat_is_a_no_op() {
     let rule = Rule::ProducerRole;
     for world in worlds(&[50, 60, 1]) {
-        let first = world.born(rule, &[&[(50, Role::Anchor), (1, Role::Ordinary)]]);
+        let first = world.born(rule, &[&[(50, Role::Anchor), (1, Role::Interior)]]);
         let handoff: Spec<'_> = &[
-            (50, Role::Ordinary),
+            (50, Role::Interior),
             (60, Role::Anchor),
-            (1, Role::Ordinary),
+            (1, Role::Interior),
         ];
         let second = step(&world, rule, &first, &[handoff]).unwrap();
         let successor = tid(rule, 60, &[id(rule, 50)]);
@@ -37,8 +37,8 @@ fn boundary_counts_only_walls_that_stay_walls() {
     let world = World::new(&[10, 11, 12, 20, 21], 3, 1, 1);
     let prior = world.born(rule, &[&[(10, Role::Boundary), (11, Role::Boundary)]]);
     let demoted: Spec<'_> = &[
-        (10, Role::Ordinary),
-        (11, Role::Ordinary),
+        (10, Role::Interior),
+        (11, Role::Interior),
         (20, Role::Boundary),
     ];
     let next = step(&world, rule, &prior, &[demoted, &[(21, Role::Boundary)]]).unwrap();
@@ -48,7 +48,7 @@ fn boundary_counts_only_walls_that_stay_walls() {
         .all(|group| group.identity != id(rule, 10)));
     assert_eq!(next.retired, BTreeSet::from([id(rule, 10)]));
     let kept: Spec<'_> = &[
-        (10, Role::Ordinary),
+        (10, Role::Interior),
         (11, Role::Boundary),
         (12, Role::Boundary),
     ];
@@ -64,14 +64,14 @@ fn demoting_the_last_required_role_member_refuses_even_for_a_keeper() {
     let world = World::new(&[50, 1, 10, 11], 0, 1, 1);
     let producer = world.born(
         Rule::ProducerRole,
-        &[&[(50, Role::Anchor), (1, Role::Ordinary)]],
+        &[&[(50, Role::Anchor), (1, Role::Interior)]],
     );
     assert_eq!(
         step(
             &world,
             Rule::ProducerRole,
             &producer,
-            &[&[(50, Role::Ordinary), (1, Role::Ordinary)]]
+            &[&[(50, Role::Interior), (1, Role::Interior)]]
         ),
         Err(Denial::MissingAnchorMember {
             rule: Rule::ProducerRole,
@@ -87,7 +87,7 @@ fn demoting_the_last_required_role_member_refuses_even_for_a_keeper() {
             &world,
             Rule::Boundary,
             &walls,
-            &[&[(10, Role::Ordinary), (11, Role::Ordinary)]]
+            &[&[(10, Role::Interior), (11, Role::Interior)]]
         ),
         Err(Denial::MissingAnchorMember {
             rule: Rule::Boundary,

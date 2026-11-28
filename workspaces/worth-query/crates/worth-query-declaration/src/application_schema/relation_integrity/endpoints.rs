@@ -1,9 +1,4 @@
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
-pub enum ApplicationRelationCrossContextPolicy {
-    AllowExplicit,
-    SchemaControlled,
-    Forbid,
-}
+pub use worth_foundational::CrossContextPolicy as ApplicationRelationCrossContextPolicy;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ApplicationRelationEndpoints {

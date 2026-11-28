@@ -43,7 +43,7 @@ pub(super) fn churn_rounds(
         let (entities, names) = fixture::create_named_batch(request, runtime, branch, &keys);
         let mut members = vec![(anchor_n, AggregateMemberRole::Anchor)];
         for &n in &names {
-            members.push((n, AggregateMemberRole::Ordinary));
+            members.push((n, AggregateMemberRole::Interior));
         }
         fixture::publish_group(request, runtime, branch, anchor_e, vec![members]);
         if step < keep_from {

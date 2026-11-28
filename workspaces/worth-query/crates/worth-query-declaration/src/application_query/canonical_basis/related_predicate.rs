@@ -6,7 +6,6 @@ use super::where_filter::append_where_filter_at;
 use crate::application_query::{
     ApplicationQueryPredicateExpected, ApplicationQueryRelatedPredicateMeaning, RelationDirection,
 };
-use crate::application_schema::ApplicationFieldPresence;
 use worth_foundational::facade::{prepare_aspect_value_identity_basis, CanonicalBasisEntry};
 
 pub(super) fn append_related_predicates(
@@ -53,10 +52,7 @@ pub(super) fn append_related_predicates(
                 ),
                 text(
                     format!("{tpath}.presence"),
-                    match target.presence() {
-                        ApplicationFieldPresence::Required => "required",
-                        ApplicationFieldPresence::Optional => "optional",
-                    },
+                    (target.presence()).canonical_name(),
                 ),
             ]);
         }

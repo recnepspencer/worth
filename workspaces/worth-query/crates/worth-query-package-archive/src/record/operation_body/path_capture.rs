@@ -4,9 +4,9 @@ use super::{
     BinaryEncodingSink, BinaryInput, Denial, Kind, RecordDecodeAttempt,
     WorthQueryPortableTypeIdentity,
 };
+use crate::record::application_schema::wire_vocabulary::{decode_presence, write_presence};
 use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence as Presence, ApplicationOperationBodyCaptureRole as Role,
-    ApplicationOperationBodyPathFieldSource as Source,
+    ApplicationOperationBodyCaptureRole as Role, ApplicationOperationBodyPathFieldSource as Source,
 };
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, step: &Field) -> Result<(), Denial> {
     let Field::CapturedPathField {
@@ -63,17 +63,4 @@ pub(super) fn decode(
         role,
         target_presence,
     })
-}
-fn write_presence(output: &mut dyn BinaryEncodingSink, presence: Presence) -> Result<(), Denial> {
-    output.u16(match presence {
-        Presence::Required => 1,
-        Presence::Optional => 2,
-    })
-}
-fn decode_presence(input: &mut BinaryInput<'_>) -> Result<Presence, Denial> {
-    match input.u16()? {
-        1 => Ok(Presence::Required),
-        2 => Ok(Presence::Optional),
-        _ => Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    }
 }

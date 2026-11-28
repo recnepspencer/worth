@@ -78,11 +78,10 @@ pub(super) fn lower(
         })?;
     let mut bindings = BTreeMap::new();
     for layout in catalog.schemes() {
-        let (subject, kinds) = match layout.subject_kind() {
-            ApplicationNameSubjectKind::Entity => (PersistentNameSubjectKind::Entity, entity_kinds),
-            ApplicationNameSubjectKind::Relation => {
-                (PersistentNameSubjectKind::Relation, relation_kinds)
-            }
+        let subject = layout.subject_kind();
+        let kinds = match subject {
+            ApplicationNameSubjectKind::Entity => entity_kinds,
+            ApplicationNameSubjectKind::Relation => relation_kinds,
             ApplicationNameSubjectKind::Group => continue,
         };
         let kind = required_kind(kinds, layout.subject_name())?;

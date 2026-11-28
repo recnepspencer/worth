@@ -10,39 +10,21 @@
 //!   decode with [`ValueCodecDenial::NonCanonical`].
 use super::{decode_coords, encode_coords, WorthQueryBox2DProbe, WorthQueryBox3DProbe};
 use worth_query_declaration::facade::application_schema::{
-    BinaryValueDelegate, BinaryValueWriter, CanonicalF64, ValueCodecDenial, ValueDecodeAdmission,
-    WorthBinaryWireField, WorthQueryDefaultValueBinding,
+    BinaryValueDelegate, BinaryValueWriter, CanonicalF64, FiniteCanonicalF64, ValueCodecDenial,
+    ValueDecodeAdmission, WorthBinaryWireField, WorthQueryDefaultValueBinding,
 };
 use worth_query_declaration::worth_query_value_binding;
 
-const NEG_ZERO_BITS: u64 = (-0.0_f64).to_bits();
-const POS_ZERO_BITS: u64 = 0.0_f64.to_bits();
-
-#[inline]
-const fn canonicalize_zero_bits(bits: u64) -> u64 {
-    if bits == NEG_ZERO_BITS {
-        POS_ZERO_BITS
-    } else {
-        bits
-    }
-}
-
-#[inline]
 fn encode_finite_f64(bits: u64) -> Result<CanonicalF64, ValueCodecDenial> {
-    let canonical = canonicalize_zero_bits(bits);
-    let value = CanonicalF64(canonical);
-    if !value.as_f64().is_finite() {
-        return Err(ValueCodecDenial::NonCanonical);
-    }
-    Ok(value)
+    FiniteCanonicalF64::from_f64(f64::from_bits(bits))
+        .map(Into::into)
+        .ok_or(ValueCodecDenial::NonCanonical)
 }
 
-#[inline]
 fn validate_decoded_f64(value: CanonicalF64) -> Result<u64, ValueCodecDenial> {
-    if value.0 == NEG_ZERO_BITS || !value.as_f64().is_finite() {
-        return Err(ValueCodecDenial::NonCanonical);
-    }
-    Ok(value.0)
+    FiniteCanonicalF64::from_wire_bits(value.bits())
+        .map(FiniteCanonicalF64::bits)
+        .ok_or(ValueCodecDenial::NonCanonical)
 }
 
 /// Stock 2D canonical-float bounding-box probe (`CanonicalF64` IEEE-754 bits).
@@ -57,10 +39,10 @@ pub struct WorthQueryBox2DF64 {
 impl WorthQueryBox2DF64 {
     pub const fn new(min: [CanonicalF64; 2], max: [CanonicalF64; 2]) -> Self {
         Self {
-            min_x_bits: canonicalize_zero_bits(min[0].0),
-            min_y_bits: canonicalize_zero_bits(min[1].0),
-            max_x_bits: canonicalize_zero_bits(max[0].0),
-            max_y_bits: canonicalize_zero_bits(max[1].0),
+            min_x_bits: FiniteCanonicalF64::normalize_zero_bits(min[0].0),
+            min_y_bits: FiniteCanonicalF64::normalize_zero_bits(min[1].0),
+            max_x_bits: FiniteCanonicalF64::normalize_zero_bits(max[0].0),
+            max_y_bits: FiniteCanonicalF64::normalize_zero_bits(max[1].0),
         }
     }
 
@@ -96,12 +78,12 @@ pub struct WorthQueryBox3DF64 {
 impl WorthQueryBox3DF64 {
     pub const fn new(min: [CanonicalF64; 3], max: [CanonicalF64; 3]) -> Self {
         Self {
-            min_x_bits: canonicalize_zero_bits(min[0].0),
-            min_y_bits: canonicalize_zero_bits(min[1].0),
-            min_z_bits: canonicalize_zero_bits(min[2].0),
-            max_x_bits: canonicalize_zero_bits(max[0].0),
-            max_y_bits: canonicalize_zero_bits(max[1].0),
-            max_z_bits: canonicalize_zero_bits(max[2].0),
+            min_x_bits: FiniteCanonicalF64::normalize_zero_bits(min[0].0),
+            min_y_bits: FiniteCanonicalF64::normalize_zero_bits(min[1].0),
+            min_z_bits: FiniteCanonicalF64::normalize_zero_bits(min[2].0),
+            max_x_bits: FiniteCanonicalF64::normalize_zero_bits(max[0].0),
+            max_y_bits: FiniteCanonicalF64::normalize_zero_bits(max[1].0),
+            max_z_bits: FiniteCanonicalF64::normalize_zero_bits(max[2].0),
         }
     }
 

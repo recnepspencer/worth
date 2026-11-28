@@ -5,7 +5,7 @@ use worth_query_declaration::facade::application_schema::{
     WorthQueryPortableDerivedRelationParts,
 };
 use worth_relational::facade::schema::{
-    DerivedRelationCardinality, DerivedRelationGraphLaws, DerivedRelationMinimumReachability,
+    DerivedRelationGraphLaws, DerivedRelationMinimumReachability,
 };
 
 pub(super) fn lower(
@@ -16,7 +16,7 @@ pub(super) fn lower(
     domains: &BTreeMap<String, super::super::projected_member_domain::ProjectedMemberDomainLayout>,
     registry: &RelationalSchemaRegistry,
 ) -> Result<Option<DerivedRelationGraphLaws>, Denial> {
-    if (parts.expression.is_legacy_shape() || maintained_ordered(parts, schema))
+    if (parts.expression.is_entity_path() || maintained_ordered(parts, schema))
         && endpoint_laws_proved(parts, schema, registry, relations)
     {
         return Ok(None);
@@ -49,17 +49,8 @@ pub(super) fn lower(
         .transpose()?;
     Ok(Some(DerivedRelationGraphLaws {
         self_edges_allowed: laws.endpoints.self_edges_allowed,
-        cross_context_policy: super::super::registry_lowering::lower_cross_context(
-            laws.endpoints.cross_context_policy,
-        ),
-        cardinality: DerivedRelationCardinality {
-            source_min: cardinality.source_min,
-            source_max: cardinality.source_max,
-            target_min: cardinality.target_min,
-            target_max: cardinality.target_max,
-            pair_min: cardinality.pair_min,
-            pair_max: cardinality.pair_max,
-        },
+        cross_context_policy: laws.endpoints.cross_context_policy,
+        cardinality,
         acyclic: laws.acyclic,
         symmetric: laws.symmetric,
         orbit: laws.orbit,

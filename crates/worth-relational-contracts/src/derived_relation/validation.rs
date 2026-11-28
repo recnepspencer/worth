@@ -11,7 +11,7 @@ use crate::derived_relation::definition::{
 use crate::graph_member::NativeMemberDomain as Domain;
 use crate::identity::data::KindId;
 use crate::schema::data::RelationalSchemaRegistry;
-use crate::schema::identifier;
+use worth_foundational::{is_valid_role_identifier, is_valid_simple_identifier};
 
 pub(super) struct ValidatedExpression {
     pub(super) dependencies: BTreeSet<Identity>,
@@ -23,8 +23,8 @@ pub(super) fn expression(
     definitions: &BTreeMap<Identity, Parts>,
     registry: &RelationalSchemaRegistry,
 ) -> Result<ValidatedExpression, Denial> {
-    if !identifier::is_simple(&parts.identity.name)
-        || !identifier::is_dotted(&parts.identity.schema.0)
+    if !is_valid_simple_identifier(&parts.identity.name)
+        || !is_valid_role_identifier(&parts.identity.schema.0)
     {
         return Err(Denial::InvalidIdentity);
     }

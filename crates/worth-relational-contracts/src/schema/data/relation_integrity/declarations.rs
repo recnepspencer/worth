@@ -168,12 +168,7 @@ pub enum MinimumCardinalityEnforcement {
     CertificationBoundary,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[non_exhaustive]
-pub enum UniquenessScope {
-    DirectedSemanticEdge,
-    NormalizedSymmetricEdge,
-}
+pub use worth_foundational::UniquenessScope;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UniquenessContractDeclaration {

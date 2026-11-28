@@ -1,7 +1,7 @@
 //! Canonical form of a birth claim, independently of readmission into a lineage.
 use super::birth_digest::canonical_birth_digest;
-use super::discriminator_scan::extract_embedded_name_refs;
 use super::{PersistentNameIdentity, PersistentNameSubjectKind};
+use worth_foundational::{scan_name_discriminator_references, DiscriminatorScanError};
 
 /// Raw 32 bytes of a persisted identity, before any readmission.
 pub type PersistedNameBytes = [u8; PersistentNameIdentity::BYTE_LEN];
@@ -25,7 +25,10 @@ pub enum BirthReadmissionRefusal {
     /// Parents are not strictly ascending: unsorted or duplicated.
     NonCanonicalParents { stored: PersistedNameBytes },
     /// The discriminator fails the canonical discriminator scan.
-    MalformedDiscriminator { stored: PersistedNameBytes },
+    MalformedDiscriminator {
+        stored: PersistedNameBytes,
+        error: DiscriminatorScanError,
+    },
     /// Re-hashing the typed parts does not reproduce the stored identity.
     DigestMismatch {
         stored: PersistedNameBytes,
@@ -54,8 +57,8 @@ pub fn verify_claim_encoding(
     if !strictly_sorted {
         return Err(BirthReadmissionRefusal::NonCanonicalParents { stored });
     }
-    let embedded_references = extract_embedded_name_refs(&claim.canonical_discriminator)
-        .map_err(|()| BirthReadmissionRefusal::MalformedDiscriminator { stored })?;
+    let embedded_references = scan_name_discriminator_references(&claim.canonical_discriminator)
+        .map_err(|error| BirthReadmissionRefusal::MalformedDiscriminator { stored, error })?;
     let recomputed = canonical_birth_digest(
         &claim.scheme_id,
         &claim.occurrence_key,

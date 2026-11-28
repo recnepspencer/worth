@@ -4,34 +4,7 @@ use crate::graph_member::NativeMemberDomain;
 use crate::internal_port::graph_member::domain::NativeMemberDomainOwnerPort as _;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
-pub struct DerivedRelationCardinality {
-    pub source_min: Option<u64>,
-    pub source_max: Option<u64>,
-    pub target_min: Option<u64>,
-    pub target_max: Option<u64>,
-    pub pair_min: Option<u64>,
-    pub pair_max: Option<u64>,
-}
-impl DerivedRelationCardinality {
-    pub(super) fn valid(&self) -> bool {
-        [self.source_min, self.target_min, self.pair_min]
-            .into_iter()
-            .flatten()
-            .all(|n| n > 0)
-            && self.pair_max != Some(0)
-            && [
-                (self.source_min, self.source_max),
-                (self.target_min, self.target_max),
-                (self.pair_min, self.pair_max),
-            ]
-            .into_iter()
-            .all(|(minimum, maximum)| match (minimum, maximum) {
-                (Some(a), Some(b)) => a <= b,
-                _ => true,
-            })
-    }
-}
+pub use worth_foundational::RelationCardinality as DerivedRelationCardinality;
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub struct DerivedRelationMinimumReachability {
@@ -61,7 +34,7 @@ pub trait DerivedRelationGraphLawsOwnerPort: Sized {
 
 impl DerivedRelationGraphLawsOwnerPort for DerivedRelationGraphLaws {
     fn valid(&self, from: &NativeMemberDomain, to: &NativeMemberDomain) -> bool {
-        self.cardinality.valid()
+        self.cardinality.is_valid()
             && (!self.orbit || from == to)
             && self.reaches_at_least.as_ref().is_none_or(|minimum| {
                 minimum.minimum_reachable_targets > 0

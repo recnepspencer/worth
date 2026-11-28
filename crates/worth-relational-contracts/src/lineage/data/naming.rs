@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::identity::data::{EntityId, LineageId, RelationId};
 
@@ -44,13 +44,7 @@ impl fmt::Debug for PersistentNameIdentity {
     }
 }
 
-/// Subject class governed by a persistent name scheme in Relational.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-pub enum PersistentNameSubjectKind {
-    Entity,
-    Relation,
-    Group,
-}
+pub use worth_foundational::PersistentNameSubjectKind;
 
 /// Canonical birth provenance recorded on a `Create` lineage event.
 ///
@@ -181,23 +175,24 @@ impl InstalledPersistentNameScheme {
         structural_identity: bool,
     ) -> Result<Self, String> {
         let scheme_id = scheme_id.into();
-        if !is_valid_dotted_scheme_id(&scheme_id) {
+        if !worth_foundational::is_valid_dotted_identifier(&scheme_id) {
             return Err(format!(
                 "invalid persistent name scheme identifier `{scheme_id}`"
             ));
         }
         let subject_name = subject_name.into();
-        if subject_name.trim().is_empty() {
+        // Native registrations may use qualified kind names.
+        if !worth_foundational::is_valid_role_identifier(&subject_name) {
             return Err(format!(
-                "persistent name scheme `{scheme_id}` requires a non-empty subject name"
+                "persistent name scheme `{scheme_id}` requires a valid subject name"
             ));
         }
         let mut role_ranks = BTreeMap::new();
         for (rank, role) in ordered_roles.into_iter().enumerate() {
             let role = role.into();
-            if role.trim().is_empty() {
+            if !worth_foundational::is_valid_role_identifier(&role) {
                 return Err(format!(
-                    "persistent name scheme `{scheme_id}` contains an empty role name"
+                    "persistent name scheme `{scheme_id}` contains an invalid role name"
                 ));
             }
             let rank = u32::try_from(rank)
@@ -263,16 +258,6 @@ impl InstalledPersistentNameScheme {
     pub const fn require_authored_occurrence(&self) -> bool {
         self.require_authored_occurrence
     }
-}
-
-fn is_valid_dotted_scheme_id(id: &str) -> bool {
-    !id.is_empty()
-        && id.split('.').all(|segment| {
-            !segment.is_empty()
-                && segment
-                    .bytes()
-                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
-        })
 }
 
 /// Immutable registry of installed persistent name schemes visible during

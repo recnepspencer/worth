@@ -88,11 +88,4 @@ impl ErasedApplicationDerivedRelationDefinition {
         }
         Ok(())
     }
-
-    /// Exact legacy wire eligibility; extended meaning has one distinct grammar.
-    pub fn is_legacy_shape(&self) -> bool {
-        self.parts.from.entity().is_some()
-            && self.parts.to.entity().is_some()
-            && self.parts.expression.is_legacy_shape()
-    }
 }

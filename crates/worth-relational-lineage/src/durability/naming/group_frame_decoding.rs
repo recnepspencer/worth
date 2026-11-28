@@ -188,7 +188,7 @@ fn decode_member(reader: &mut WireReader<'_>) -> Result<DecodedMember, Refusal> 
         }
     };
     let role = match reader.u8()? {
-        1 => AggregateMemberRole::Ordinary,
+        1 => AggregateMemberRole::Interior,
         2 => AggregateMemberRole::Anchor,
         3 => AggregateMemberRole::Boundary,
         tag => {

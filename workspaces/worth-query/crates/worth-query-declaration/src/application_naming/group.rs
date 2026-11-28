@@ -13,43 +13,9 @@ use super::{
     ErasedApplicationNameScheme,
 };
 
-/// Closed consumer-driven continuity rule for group split/merge keeper selection.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub enum ApplicationGroupContinuityRule {
-    /// Follows its anchor carrier (e.g., a loop follows its host face).
-    Anchor,
-    /// Follows its enclosing boundary members (e.g., a space follows its walls).
-    Boundary,
-    /// Follows its owning producer role (e.g., a shell follows its owning body feature).
-    ProducerRole,
-}
+pub use worth_foundational::AggregateContinuityRule as ApplicationGroupContinuityRule;
 
-impl ApplicationGroupContinuityRule {
-    pub const fn canonical_name(self) -> &'static str {
-        match self {
-            Self::Anchor => "anchor",
-            Self::Boundary => "boundary",
-            Self::ProducerRole => "producer-role",
-        }
-    }
-
-    /// Canonical byte Relational hashes into the v2 group identity domain.
-    pub const fn canonical_tag(self) -> u8 {
-        match self {
-            Self::Anchor => 1,
-            Self::Boundary => 2,
-            Self::ProducerRole => 3,
-        }
-    }
-}
-
-/// Continuity meaning of one member's declared role within its group.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub enum ApplicationGroupMemberRole {
-    Ordinary,
-    Anchor,
-    Boundary,
-}
+pub use worth_foundational::AggregateMemberRole as ApplicationGroupMemberRole;
 
 /// Typed refusal of a group scheme declaration.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -144,7 +110,7 @@ impl ErasedApplicationGroupNameScheme {
         } else if self.boundary_role.as_deref() == Some(role) {
             ApplicationGroupMemberRole::Boundary
         } else {
-            ApplicationGroupMemberRole::Ordinary
+            ApplicationGroupMemberRole::Interior
         }
     }
 }

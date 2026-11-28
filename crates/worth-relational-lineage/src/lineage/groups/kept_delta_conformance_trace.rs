@@ -164,17 +164,17 @@ fn json_members<'m>(entries: impl Iterator<Item = (&'m Name, &'m AggregateGroupM
 }
 
 fn steps() -> Vec<Step> {
-    use Role::{Anchor, Boundary, Ordinary};
-    let o = |n| (n, 1, Ordinary);
+    use Role::{Anchor, Boundary, Interior};
+    let o = |n| (n, 1, Interior);
     vec![
         Step::Born(vec![(1, 1, Anchor), o(2), o(3), o(4), o(5)]),
         Step::Kept(Vec::new(), vec![o(6), o(200), o(201)]),
         Step::Kept(vec![3, 200], Vec::new()),
-        Step::Kept(Vec::new(), vec![(2, 2, Ordinary)]),
+        Step::Kept(Vec::new(), vec![(2, 2, Interior)]),
         Step::Kept(Vec::new(), vec![(4, 1, Boundary)]),
         Step::Kept(vec![5, 6], vec![o(7)]),
         Step::Retired,
-        Step::Revived(vec![(1, 1, Anchor), (2, 2, Ordinary), o(8)]),
+        Step::Revived(vec![(1, 1, Anchor), (2, 2, Interior), o(8)]),
         Step::Kept(vec![8], vec![o(9), (2, 3, Boundary)]),
     ]
 }

@@ -43,7 +43,7 @@ fn detach_after_cold_reopen(members: usize) -> (usize, usize) {
         .enumerate()
         .map(|(i, &name)| match i {
             0 => (name, AggregateMemberRole::Anchor),
-            _ => (name, AggregateMemberRole::Ordinary),
+            _ => (name, AggregateMemberRole::Interior),
         })
         .collect();
     publish_group_partition(request, &producer, &main, entities[0], "whole", vec![group]);
@@ -101,7 +101,7 @@ fn kept_delta_tail_replay_over_damaged_group_header_refuses_cold_storage_unavail
         .enumerate()
         .map(|(i, &name)| match i {
             0 => (name, AggregateMemberRole::Anchor),
-            _ => (name, AggregateMemberRole::Ordinary),
+            _ => (name, AggregateMemberRole::Interior),
         })
         .collect();
     publish_group_partition(request, &producer, &main, entities[0], "whole", vec![group]);

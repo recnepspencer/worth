@@ -7,7 +7,7 @@ pub(in crate::application_schema) fn validate_field_identifier(path: &str) -> Re
         let mut pieces = segment.split('[');
         let name = pieces.next().ok_or(Denial::InvalidIdentifier)?;
         validate_simple_identifier(name)?;
-        if name.contains(']') || name.chars().any(char::is_control) {
+        if name.contains(']') {
             return Err(Denial::InvalidIdentifier);
         }
         for index in pieces {

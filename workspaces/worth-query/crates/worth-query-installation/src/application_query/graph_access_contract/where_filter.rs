@@ -185,10 +185,7 @@ impl WorthQueryInstalledWhereFilter {
                 ),
                 text(
                     format!("{path}.presence"),
-                    match field.presence {
-                        ApplicationFieldPresence::Required => "required",
-                        ApplicationFieldPresence::Optional => "optional",
-                    },
+                    (field.presence).canonical_name(),
                 ),
             ]);
         }

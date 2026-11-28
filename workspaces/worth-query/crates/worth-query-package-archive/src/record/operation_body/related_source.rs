@@ -1,11 +1,10 @@
 //! Related-field opcode 9 is admitted only by body profile 20 or newer.
 use super::{
     ApplicationFieldBindingLocus, ApplicationOperationBodyCreatedField as Step, BinaryEncodingSink,
-    BinaryInput, Denial, Kind, WorthQueryPortableTypeIdentity,
+    BinaryInput, Denial, WorthQueryPortableTypeIdentity,
 };
-use worth_query_declaration::facade::application_schema::{
-    ApplicationFieldPresence as Presence, ApplicationOperationBodyRelatedFieldSource as Source,
-};
+use crate::record::application_schema::wire_vocabulary::{decode_presence, write_presence};
+use worth_query_declaration::facade::application_schema::ApplicationOperationBodyRelatedFieldSource as Source;
 pub(super) fn write(output: &mut dyn BinaryEncodingSink, step: &Step) -> Result<(), Denial> {
     let Step::RelatedField {
         source,
@@ -26,10 +25,7 @@ pub(super) fn write(output: &mut dyn BinaryEncodingSink, step: &Step) -> Result<
     ] {
         output.text(value)?;
     }
-    output.u16(match source.presence {
-        Presence::Required => 1,
-        Presence::Optional => 2,
-    })
+    write_presence(output, source.presence)
 }
 pub(super) fn decode(
     input: &mut BinaryInput<'_>,
@@ -42,11 +38,7 @@ pub(super) fn decode(
     let to = input.text()?.to_owned();
     let source_field =
         ApplicationFieldBindingLocus::new(input.text()?, input.text()?, input.text()?);
-    let presence = match input.u16()? {
-        1 => Presence::Required,
-        2 => Presence::Optional,
-        _ => return Err(Denial::new(Kind::UnsupportedRecordVariant)),
-    };
+    let presence = decode_presence(input)?;
     Ok(Step::RelatedField {
         field,
         binding,

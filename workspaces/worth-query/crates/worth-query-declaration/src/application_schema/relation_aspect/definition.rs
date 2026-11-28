@@ -70,8 +70,5 @@ impl ErasedApplicationRelationAspectDefinition {
 }
 
 fn valid(value: &str) -> bool {
-    !value.is_empty()
-        && !value
-            .chars()
-            .any(|ch| ch.is_whitespace() || ch.is_control() || ch == '.')
+    worth_foundational::is_valid_simple_identifier(value)
 }

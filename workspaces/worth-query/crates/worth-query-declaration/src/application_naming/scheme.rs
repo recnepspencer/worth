@@ -10,23 +10,7 @@ use super::denial::{
 };
 use super::{ApplicationNameDiscriminator, ApplicationNameSchemeDenial};
 
-/// Subject family governed by an [`ApplicationNameScheme`].
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
-pub enum ApplicationNameSubjectKind {
-    Entity,
-    Relation,
-    Group,
-}
-
-impl ApplicationNameSubjectKind {
-    pub const fn canonical_name(self) -> &'static str {
-        match self {
-            Self::Entity => "entity",
-            Self::Relation => "relation",
-            Self::Group => "group",
-        }
-    }
-}
+pub use worth_foundational::PersistentNameSubjectKind as ApplicationNameSubjectKind;
 
 /// Directed same-occurrence role reference edge: `role` references a name minted
 /// by `depends_on` within the same occurrence.

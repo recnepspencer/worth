@@ -1,10 +1,10 @@
 //! Cold lowering of value meaning from the installed catalogues. No roster is
 //! stored in parallel with the declaration, executable binding or native shape.
 use crate::application_schema::WorthQueryInstalledApplicationSchema;
-use worth_foundational::facade::{AspectShape, FieldRequirement};
+use worth_foundational::facade::AspectShape;
 use worth_query_declaration::facade::application_schema::{
-    ApplicationAspectValueMeaning, ApplicationFieldPresence, ApplicationSchema,
-    ApplicationSchemaMember, ApplicationValueMeaningDenial,
+    ApplicationAspectValueMeaning, ApplicationSchema, ApplicationSchemaMember,
+    ApplicationValueMeaningDenial,
 };
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -81,10 +81,7 @@ impl<Schema: ApplicationSchema> WorthQueryInstalledApplicationSchema<Schema> {
                 let (native_family, native_requirement, native_codec) = native
                     .field_value_contract(&key)
                     .ok_or(D::NativeFieldMismatch)?;
-                let requirement = match field.presence() {
-                    ApplicationFieldPresence::Required => FieldRequirement::Required,
-                    ApplicationFieldPresence::Optional => FieldRequirement::Optional,
-                };
+                let requirement = field.presence();
                 if native_family != *scalar_family
                     || native_requirement != requirement
                     || native_codec != field.codec_digest()

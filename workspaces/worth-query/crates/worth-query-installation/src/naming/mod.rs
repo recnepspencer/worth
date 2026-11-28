@@ -153,7 +153,7 @@ impl InstalledGroupNameSchemeLayout {
         } else if self.boundary_role.as_deref() == Some(role) {
             ApplicationGroupMemberRole::Boundary
         } else {
-            ApplicationGroupMemberRole::Ordinary
+            ApplicationGroupMemberRole::Interior
         }
     }
 

@@ -50,7 +50,7 @@ pub(super) const fn origin_tag(origin: AggregateGroupOrigin) -> u8 {
 
 pub(super) const fn role_tag(role: AggregateMemberRole) -> u8 {
     match role {
-        AggregateMemberRole::Ordinary => 1,
+        AggregateMemberRole::Interior => 1,
         AggregateMemberRole::Anchor => 2,
         AggregateMemberRole::Boundary => 3,
     }

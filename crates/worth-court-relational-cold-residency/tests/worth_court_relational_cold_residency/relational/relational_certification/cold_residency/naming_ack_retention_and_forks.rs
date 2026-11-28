@@ -104,7 +104,7 @@ fn fresh_runtime_c1_ack_preserves_historical_group_on_checkout_and_fork() {
         "ackg-c1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let basis_c1 = observe_branch(&runtime, &main);
@@ -175,8 +175,8 @@ fn fresh_runtime_c1_ack_preserves_historical_group_on_checkout_and_fork() {
         "ackg-fork-edit",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
-            (nf[0], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
+            (nf[0], AggregateMemberRole::Interior),
         ]],
     );
     let fork_after = observe_branch(&runtime, &fork_c1);
@@ -245,7 +245,7 @@ fn cold_historical_fork_with_inherited_groups_survives_child_checkpoint_reopen_a
         "chf-g1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let c1 = capture_and_file(request, &producer, &medium, &[]);
@@ -287,8 +287,8 @@ fn cold_historical_fork_with_inherited_groups_survives_child_checkpoint_reopen_a
         "chf-edit",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
-            (nc[0], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
+            (nc[0], AggregateMemberRole::Interior),
         ]],
     );
     let child_after = observe_branch(&reopened2, &child);

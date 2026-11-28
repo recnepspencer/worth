@@ -126,7 +126,7 @@ fn wall(face: &Named) -> (PersistentNameIdentity, AggregateMemberRole) {
 }
 
 fn void(face: &Named) -> (PersistentNameIdentity, AggregateMemberRole) {
-    (face.1, AggregateMemberRole::Ordinary)
+    (face.1, AggregateMemberRole::Interior)
 }
 
 /// Seeds faces, forms one room of three walls and a void, and checkpoints

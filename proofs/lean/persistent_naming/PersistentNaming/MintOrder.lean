@@ -190,7 +190,7 @@ def dependencyOrder (n : Nat) (deps : Nat → List Nat) : Option (List Nat) :=
 end PersistentNaming.MintOrder
 
 
--- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/model.rs:112-119 sha256:f0f55fa2ef01db9109f8f6b799fef37902abd429674c9ade24aa10f6802f9d0e
+-- proof-mirror: crates/worth-relational-contracts/src/aggregate_identity/transition/group/model.rs:82-89 sha256:f0f55fa2ef01db9109f8f6b799fef37902abd429674c9ade24aa10f6802f9d0e
 namespace PersistentNaming.GroupMember
 
 /-- Canonical identity terms, before hashing and independent of Native allocation. -/

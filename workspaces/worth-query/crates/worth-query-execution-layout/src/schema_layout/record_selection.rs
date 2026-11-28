@@ -59,8 +59,8 @@ impl WorthQueryPrimaryGraphLayout {
     > + 'a {
         self.value_bindings
             .exclusion_groups(entity)
-            .filter(move |(_, members, _)| members.contains(aspect))
-            .map(|(_, members, required)| (members, required))
+            .filter(move |group| group.aspects.contains(aspect))
+            .map(|group| (&group.aspects, group.required))
     }
 
     pub fn record_presence_locator(

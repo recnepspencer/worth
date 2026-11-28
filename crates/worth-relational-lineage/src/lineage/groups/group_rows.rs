@@ -49,11 +49,11 @@ pub(crate) struct GroupOwnerRow {
     pub(crate) role: Role,
 }
 
-pub(crate) const ROLES: [Role; 3] = [Role::Ordinary, Role::Anchor, Role::Boundary];
+pub(crate) const ROLES: [Role; 3] = [Role::Interior, Role::Anchor, Role::Boundary];
 
 const fn role_tag(role: Role) -> u8 {
     match role {
-        Role::Ordinary => 0,
+        Role::Interior => 0,
         Role::Anchor => 1,
         Role::Boundary => 2,
     }
@@ -61,7 +61,7 @@ const fn role_tag(role: Role) -> u8 {
 
 fn read_role(input: &mut Reader<'_>) -> Result<Role, Cause> {
     match input.u8()? {
-        0 => Ok(Role::Ordinary),
+        0 => Ok(Role::Interior),
         1 => Ok(Role::Anchor),
         2 => Ok(Role::Boundary),
         _ => Err(Cause::Damaged),

@@ -127,7 +127,7 @@ fn build_composed(request: &ExecutionRequest<'_, '_>, names: usize, forks: usize
         .enumerate()
         .map(|(i, &name)| match i {
             0 => (name, AggregateMemberRole::Anchor),
-            _ => (name, AggregateMemberRole::Ordinary),
+            _ => (name, AggregateMemberRole::Interior),
         })
         .collect();
     publish_group_partition(request, &producer, &main, seed[0], "whole", vec![group]);

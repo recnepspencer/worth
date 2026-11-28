@@ -38,7 +38,7 @@ fn group_scheme_binds_rule_and_maps_member_roles() {
     assert_eq!(erased.name_scheme().subject_name(), "Space");
     assert_eq!(erased.member_role("wall"), Role::Boundary);
     assert_eq!(erased.member_role("producer"), Role::Anchor);
-    assert_eq!(erased.member_role("void"), Role::Ordinary);
+    assert_eq!(erased.member_role("void"), Role::Interior);
     assert_eq!(scheme.clone().into_erased(), *erased);
     let anchor_only = builder(Rule::Anchor).build().unwrap();
     assert_eq!(anchor_only.erased().anchor_role(), None);
@@ -89,13 +89,14 @@ fn group_scheme_refuses_missing_undeclared_and_ambiguous_roles() {
 
 #[test]
 fn group_scheme_ids_share_relationals_dotted_grammar() {
-    for lawful in ["cad.Space.v1", "cad.loop", "a", "worth.example.face.v1"] {
+    for lawful in ["cad.Space.v1", "cad.loop", "例.面", "worth.example.face.v1"] {
         let built = Builder::<Cad, Space>::new(lawful, "Space", Rule::Anchor)
             .role_order(&["wall"])
             .build();
         assert!(built.is_ok(), "{lawful}");
     }
     for unlawful in [
+        "a",
         "",
         "...",
         ".a..b.",

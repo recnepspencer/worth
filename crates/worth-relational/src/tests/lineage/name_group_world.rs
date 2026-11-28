@@ -52,7 +52,7 @@ impl GroupWorld {
             for &n in *group {
                 let carrier =
                     NativeMemberKey::Entity(EntityId::new(PartitionId::main(), u64::from(n), 1));
-                members.insert(member(n), carrier, AggregateMemberRole::Ordinary)?;
+                members.insert(member(n), carrier, AggregateMemberRole::Interior)?;
             }
             proposed.push(members);
         }

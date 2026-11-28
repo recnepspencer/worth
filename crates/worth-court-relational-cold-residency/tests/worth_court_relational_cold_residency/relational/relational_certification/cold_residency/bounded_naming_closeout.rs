@@ -47,7 +47,7 @@ fn damaged_naming_page_fails_closed_on_reads_commits_and_tail_replay() {
         "dmg-group",
         vec![vec![
             (names[0], AggregateMemberRole::Anchor),
-            (names[1], AggregateMemberRole::Ordinary),
+            (names[1], AggregateMemberRole::Interior),
         ]],
     );
     let (c1, _) = capture_external_checkpoint(request, &producer);
@@ -177,7 +177,7 @@ fn advance_naming_retention_floor_preserves_ge_floor_and_refuses_lt_floor() {
         "g-step-1",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n1[1], AggregateMemberRole::Ordinary),
+            (n1[1], AggregateMemberRole::Interior),
         ]],
     );
     let _c3 = delete_entity(request, &runtime, &main, e1[1]);
@@ -190,7 +190,7 @@ fn advance_naming_retention_floor_preserves_ge_floor_and_refuses_lt_floor() {
         "g-step-2",
         vec![vec![
             (n1[0], AggregateMemberRole::Anchor),
-            (n4[0], AggregateMemberRole::Ordinary),
+            (n4[0], AggregateMemberRole::Interior),
         ]],
     );
     let obs_head = observe_branch(&runtime, &main);

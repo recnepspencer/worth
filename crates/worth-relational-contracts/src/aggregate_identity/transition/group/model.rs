@@ -12,37 +12,7 @@ use crate::graph_member::NativeMemberKey;
 use crate::lineage::data::PersistentNameIdentity;
 use crate::projected_member_domain::ProjectedMemberDomainIdentity;
 
-/// Closed consumer-driven continuity rule for group split/merge keeper selection.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub enum AggregateContinuityRule {
-    /// Follows its anchor carrier (e.g., a loop follows its host face).
-    Anchor,
-    /// Follows its enclosing boundary members (e.g., a space follows its walls).
-    Boundary,
-    /// Follows its owning producer role (e.g., a shell follows its body feature).
-    ProducerRole,
-}
-
-impl AggregateContinuityRule {
-    /// Stable canonical byte hashed into every v2 group identity.
-    pub const fn canonical_tag(self) -> u8 {
-        match self {
-            Self::Anchor => 1,
-            Self::Boundary => 2,
-            Self::ProducerRole => 3,
-        }
-    }
-}
-
-/// Role a member plays for its group's declared continuity rule.
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
-pub enum AggregateMemberRole {
-    Ordinary,
-    /// Bears the scheme's declared anchor (or producer) role.
-    Anchor,
-    /// Encloses the group for [`AggregateContinuityRule::Boundary`].
-    Boundary,
-}
+pub use worth_foundational::{AggregateContinuityRule, AggregateMemberRole};
 
 /// Validated dotted group scheme identifier (e.g. `cad.Space.v1`).
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
@@ -54,7 +24,7 @@ impl AggregateGroupSchemeId {
     /// characters, no leading/trailing `.`, and no empty `..` segment.
     pub fn new(id: impl Into<String>) -> Result<Self, AggregateGroupNamingDenial> {
         let id = id.into();
-        if !crate::schema::identifier::is_dotted(&id) {
+        if !worth_foundational::is_valid_dotted_identifier(&id) {
             return Err(AggregateGroupNamingDenial::InvalidSchemeId { scheme_id: id });
         }
         Ok(Self(id))

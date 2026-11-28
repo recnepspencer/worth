@@ -42,7 +42,7 @@ fn issue_440_non_head_persistent_groups_survive_cold_reopen_tail_replay_and_c1_t
         "group-c2",
         vec![vec![
             (names_1[0], AggregateMemberRole::Anchor),
-            (names_1[1], AggregateMemberRole::Ordinary),
+            (names_1[1], AggregateMemberRole::Interior),
         ]],
     );
     let basis_c2 = observe_branch(&producer, &main);
@@ -72,8 +72,8 @@ fn issue_440_non_head_persistent_groups_survive_cold_reopen_tail_replay_and_c1_t
         "group-tail-expand",
         vec![vec![
             (names_1[0], AggregateMemberRole::Anchor),
-            (names_1[1], AggregateMemberRole::Ordinary),
-            (names_3[0], AggregateMemberRole::Ordinary),
+            (names_1[1], AggregateMemberRole::Interior),
+            (names_3[0], AggregateMemberRole::Interior),
         ]],
     );
 
@@ -167,8 +167,8 @@ fn issue_440_non_head_persistent_groups_survive_cold_reopen_tail_replay_and_c1_t
         "post-reopen-expand",
         vec![vec![
             (names_1[0], AggregateMemberRole::Anchor),
-            (names_1[1], AggregateMemberRole::Ordinary),
-            (names_3[0], AggregateMemberRole::Ordinary),
+            (names_1[1], AggregateMemberRole::Interior),
+            (names_3[0], AggregateMemberRole::Interior),
         ]],
     );
     let (ck2, ck2_source) = capture_external_carrying(request, &reopened, &ck1_fresh_source);
@@ -208,7 +208,7 @@ fn cold_reopen_reads_zero_naming_pages_and_c1_c2_c3_carries_and_evicts() {
             &format!("grp-{batch_idx:03}"),
             vec![vec![
                 (names[0], AggregateMemberRole::Anchor),
-                (names[1], AggregateMemberRole::Ordinary),
+                (names[1], AggregateMemberRole::Interior),
             ]],
         );
         all_names.extend(names);
