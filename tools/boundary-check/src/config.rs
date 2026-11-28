@@ -118,6 +118,15 @@ pub fn pairs(text: &str) -> Vec<(&str, &str)> {
 }
 /// Admit kept policy fields before running graph processes or rules.
 pub fn validate_policy(config: &toml::Value) -> Result<(), String> {
+    if config.get("dev_only_dependencies").is_some_and(|value| {
+        value.as_array().is_none_or(|names| {
+            names
+                .iter()
+                .any(|name| name.as_str().is_none_or(str::is_empty))
+        })
+    }) {
+        return Err("dev_only_dependencies must be a list of package names".into());
+    }
     for (section, text_fields, list_fields) in [
         (
             "dependency_denials",

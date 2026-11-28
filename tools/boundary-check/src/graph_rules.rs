@@ -1,12 +1,13 @@
 //! Metadata dependency policy and court target topology.
 use crate::{config::*, inputs::Inputs, text_rules::manifest_features};
 use std::collections::{BTreeMap, BTreeSet};
+mod dev_only;
 mod frontier;
 mod splits;
 use frontier::{frontiers, surface};
 
 pub fn check(input: &Inputs) -> Vec<Diagnostic> {
-    let mut out = Vec::new();
+    let mut out = dev_only::check(input);
     let owned: BTreeSet<_> = input
         .manifests
         .iter()

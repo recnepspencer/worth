@@ -12,10 +12,15 @@ and share its `Arc` with each application and reopened session. Handle
 [application composition guide](../../docs/build-an-application.md#one-process-execution-service)
 shows the complete installation sequence.
 
-Serial placement executes on the calling thread. Automatic placement uses the
-process pool when the request admits it. Child requests inherit the parent's
-worker width, cancellation and deadline; a narrower child can reserve a subset
-of that concurrency.
+For deterministic partitions, use `workers::ExecutionPlacement::Serial` or
+`Parallel { max_workers }` and build a worker policy with `worker_policy`.
+Pass the policy to `ExecutionAuthority::request_lease`. Serial placement uses
+the calling thread. Parallel placement uses the process pool up to the
+admitted width and falls back to serial on targets without OS threads or at
+width one. Inspect `lease.placement()` for the resolved ceiling, and the
+physical report for what ran. Child requests inherit the parent's worker
+width, cancellation and deadline. A narrower child can reserve a subset of
+that concurrency.
 
 Use `ExecutionRequest::run_native` to execute a native pattern with the request's
 lease. Use `run_native_with_checkpoint` when the callback needs
@@ -71,6 +76,21 @@ ExecutionBudget::new(...))` and use `ExecutionRequest::run(ceiling, ...)`.
 admitted width. Bounds supplied by the process or an ancestor apply to its
 descendants. `ExecutionReport::accounted_cost()` returns the measured work/span
 when the run has this contract. Use the physical report to inspect placement.
+
+## Time sampling
+
+At composition, inject an `Arc<dyn time::RawClockAdapter>` into
+`time::TimeSampler`. Use `SystemClockAdapter::new` with the wall source's
+assigned identity for OS time. Use `sample()` for recorded wall evidence with
+an issuance sequence local to that sampler. The sampler refuses source
+identity drift and preserves the issuance order when wall readings repeat or
+step backward. Persist wall coordinates only as recorded evidence. Use
+`monotonic()` for elapsed time within one boot.
+
+Tests and [deterministic simulations](../worth-dst/README.md) inject
+`ControlledTime`. Advancing it moves both clocks. Stepping wall time backward
+leaves monotonic ticks intact. Rebooting keeps wall time and starts a fresh
+monotonic epoch.
 
 ## Original-request retained storage
 

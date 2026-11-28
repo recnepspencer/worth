@@ -231,3 +231,33 @@ fn dependency_exclusion_names_one_composition_owner_without_excluding_its_neighb
         );
     }
 }
+
+#[test]
+fn explicit_testkits_allow_dev_edges_and_refuse_normal_and_build_edges() {
+    let mut input = Inputs::fixture(&[], "dev_only_dependencies = ['simulation']");
+    for kind in [Some("dev"), None, Some("build")] {
+        input.graphs.insert(
+            "Cargo.toml".into(),
+            Metadata {
+                packages: vec![Package {
+                    name: "consumer".into(),
+                    manifest_path: "crates/consumer/Cargo.toml".into(),
+                    dependencies: vec![Dependency {
+                        name: "simulation".into(),
+                        kind: kind.map(str::to_owned),
+                        ..Default::default()
+                    }],
+                    ..Default::default()
+                }],
+                ..Default::default()
+            },
+        );
+        let diagnostics = dev_only::check(&input);
+        if kind == Some("dev") {
+            assert!(diagnostics.is_empty());
+        } else {
+            assert_eq!(diagnostics.len(), 1);
+            assert!(diagnostics[0].message.contains("consumer -> simulation"));
+        }
+    }
+}

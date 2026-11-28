@@ -36,5 +36,6 @@ mod scope_entry_charge;
 mod scope_payload_panics;
 
 mod ordered_map;
+worth_execution::needs_os_threads! { mod placement; }
 
 mod array_controls;

@@ -19,6 +19,12 @@
 //! # Ok::<(), worth_foundational::expression_api::ExpressionDenial>(())
 //! ```
 
+//! Use [`ExpressionDraft`] for editable or encoded authoring, [`AdmittedExpression`]
+//! for a draft checked against its schema and catalog, and [`CompiledExpression`]
+//! to evaluate against bound [`ExpressionInputs`]. [`ExpressionContinuation`]
+//! resumes a stepped evaluation, and [`ExpressionConsumption`] describes the
+//! reads the evaluation actually performed.
+
 mod admission;
 mod authoring;
 mod evaluation;
