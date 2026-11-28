@@ -56,6 +56,7 @@ where
                 parent_branch_id: parent_branch.id,
                 snapshot_id: snapshot.meta.snapshot_id,
             })?;
+    graph.telemetry_clock = runtime.graph.telemetry_clock.clone();
     if let Some(mut telemetry) = graph.telemetry_mut() {
         *telemetry = snapshot.checkpoint_image.graph_telemetry;
     }

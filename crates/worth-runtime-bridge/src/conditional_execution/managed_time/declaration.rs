@@ -26,6 +26,7 @@ impl BridgeManagedClockDeclaration {
         runtime_key: u64,
         retention: &Arc<super::super::retention::BridgeRetentionLedger>,
         parts: BridgeManagedClockInstallationParts<'_>,
+        sampler: Option<Arc<worth_execution::time::TimeSampler>>,
     ) -> Result<Self, BridgeManagedTemporalDenial> {
         validate_identity(&parts.binding_identity, "managed clock binding")?;
         validate_identity(&parts.source_identity, "managed clock source")?;
@@ -39,6 +40,7 @@ impl BridgeManagedClockDeclaration {
         }
         let reservation = super::retention::reserve_clock(retention, parts.maximum_active_intents)?;
         let binding_reservation = super::retention::reserve_binding(retention)?;
+        let sampled_clock = sampler.map(super::sampled_clock::BridgeSampledClock::bind);
         Ok(Self {
             retention: Arc::clone(retention),
             reservation,
@@ -47,7 +49,10 @@ impl BridgeManagedClockDeclaration {
             source: parts.source_identity,
             timeline: parts.timeline_identity,
             lowering: Arc::clone(parts.lowering),
-            lease: Arc::new(BridgeManagedClockLease::issue(binding_reservation)),
+            lease: Arc::new(BridgeManagedClockLease::issue(
+                binding_reservation,
+                sampled_clock,
+            )),
             maximum_active_intents: parts.maximum_active_intents,
             maximum_due,
         })
@@ -86,8 +91,6 @@ impl BridgeManagedClockDeclaration {
             })?;
         Ok(BridgeManagedClockLane::new(
             self.lowering,
-            self.source,
-            self.timeline,
             self.lease,
             self.maximum_active_intents,
             self.maximum_due,

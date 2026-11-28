@@ -213,3 +213,5 @@ impl SignalBranchRetirementBatchReceipt {
         Self { receipts }
     }
 }
+
+mod retirement_report;

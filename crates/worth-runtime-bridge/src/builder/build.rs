@@ -69,6 +69,7 @@ impl
         let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
+            self.diagnostic_sink,
             self.committed_patch_source.0,
             self.snapshot_read_source.0,
             self.signal_sink.0,
@@ -111,6 +112,7 @@ impl
         let structural_registry = finalize_structural_configuration(self.structural_declarations)?;
         Ok(RuntimeBridge::new(
             policy,
+            self.diagnostic_sink,
             self.committed_patch_source.0,
             self.snapshot_read_source.0,
             self.signal_sink.0,

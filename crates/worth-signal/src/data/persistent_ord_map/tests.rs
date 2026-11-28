@@ -255,12 +255,10 @@ fn shared_logical_clone_is_bounded_for_rollback_capture() {
 #[test]
 fn forked_overlay_matches_btree_model_across_mixed_state_transitions() {
     for initial_seed in 1_u64..=8 {
-        let mut random = initial_seed;
+        let mut rng = worth_dst::Seed::new(initial_seed).rng();
         let mut siblings = vec![(PersistentOrdMap::new(), BTreeMap::new())];
         for _ in 0..512 {
-            random = random
-                .wrapping_mul(6_364_136_223_846_793_005)
-                .wrapping_add(1_442_695_040_888_963_407);
+            let random = rng.next_u64();
             let source = random as usize % siblings.len();
             let key = random.rotate_left(17) % 128;
             let value = random.rotate_left(31);

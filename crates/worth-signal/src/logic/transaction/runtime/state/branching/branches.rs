@@ -81,7 +81,7 @@ where
     }
 
     pub fn into_branch_state(
-        self,
+        mut self,
         graph: SignalGraph,
         runtime_telemetry: Option<RuntimeTelemetry>,
     ) -> BranchState<D, I, T> {
@@ -92,6 +92,9 @@ where
         } else {
             RuntimeTelemetry::default()
         };
+        self.derived
+            .checkpoint
+            .bind_telemetry_clock(&graph.telemetry_clock);
         let mut state = BranchState::new(
             AuthorityState {
                 graph: Box::new(graph),

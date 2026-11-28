@@ -23,14 +23,16 @@ fn assert_timer_is_constructed_only_after_optional_gate(source: &str) {
         .find("captures_observation_surface(")
         .expect("timer owner must check the optional surface");
     let timer = source
-        .find("then(RuntimeInstant::now)")
+        .find("then(|| self.time_sampler().monotonic())")
         .expect("timer owner must construct its timer through the gated branch");
     assert!(
         gate < timer,
         "the optional-surface gate must precede timer construction"
     );
     assert_eq!(
-        source.matches("then(RuntimeInstant::now)").count(),
+        source
+            .matches("then(|| self.time_sampler().monotonic())")
+            .count(),
         1,
         "the owner must not retain an unconditional timer construction"
     );

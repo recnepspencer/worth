@@ -1,4 +1,3 @@
-use crate::clock::RuntimeInstant;
 use crate::data::error::SignalError;
 
 use super::super::computation::{DefinedComputation, Recipe};
@@ -47,6 +46,7 @@ where
         let (branch_mutation_ledger, branch_head_generation, branch_restore_snapshot_id) = self
             .branches
             .transaction_branch_state_mut(current_branch.id, current_branch.head_snapshot_id);
+        let started_at = self.graph.time_sampler().monotonic();
         SignalTransaction {
             execution,
             runtime_ctx,
@@ -67,7 +67,7 @@ where
             poisoned: false,
             finished: false,
             execution_state: TransactionExecutionState::default(),
-            started_at: RuntimeInstant::now(),
+            started_at,
             commit_posture: TransactionCommitPosture::Visible,
         }
     }

@@ -13,11 +13,30 @@ impl BridgeConditionalExecutionView<'_> {
         &self,
         parts: BridgeManagedClockInstallationParts<'_>,
     ) -> Result<BridgeManagedClockBinding, BridgeManagedTemporalDenial> {
+        self.install_clock(parts, None)
+    }
+
+    /// Installs a clock driven by this sampler's uninterrupted monotonic
+    /// timeline. Intent coordinates are nanoseconds since installation.
+    pub fn install_sampled_managed_clock(
+        &self,
+        parts: BridgeManagedClockInstallationParts<'_>,
+        sampler: Arc<worth_execution::time::TimeSampler>,
+    ) -> Result<BridgeManagedClockBinding, BridgeManagedTemporalDenial> {
+        self.install_clock(parts, Some(sampler))
+    }
+
+    fn install_clock(
+        &self,
+        parts: BridgeManagedClockInstallationParts<'_>,
+        sampler: Option<Arc<worth_execution::time::TimeSampler>>,
+    ) -> Result<BridgeManagedClockBinding, BridgeManagedTemporalDenial> {
         self.require_managed_clock_lowering(parts.lowering)?;
         let declaration = super::BridgeManagedClockDeclaration::admit(
             self.bridge.signal_runtime_key,
             self.retention,
             parts,
+            sampler,
         )?;
         let identity = Arc::clone(declaration.identity());
         let binding = declaration.binding();

@@ -7,7 +7,7 @@ use crate::runtime::specialist::VersionSummary;
 use crate::runtime::summaries::CallbackDependencyPatchSummary;
 
 use super::super::aspects::aspect_versions_summary;
-use super::super::debug::{perf_now_ms, wasm_debug};
+use super::super::debug::wasm_debug;
 use super::super::evaluation::evaluate_node;
 use super::super::state::{PendingCallbackDependencyPatch, SharedStore};
 use super::super::{RuntimeCore, DEFAULT_ASPECT};
@@ -96,7 +96,7 @@ impl RuntimeCore {
             nodes.push(node);
         }
 
-        let read_started_at = perf_now_ms();
+        let read_started_at = self.runtime.time_sampler().monotonic();
         let evaluator = self.evaluator();
         let _ = self
             .runtime
@@ -107,7 +107,7 @@ impl RuntimeCore {
         wasm_debug(format!(
             "[worth-signals-wasm] read-many ids={} elapsed_ms={:.1}",
             ids.len(),
-            perf_now_ms() - read_started_at
+            self.perf_elapsed_ms(read_started_at)
         ));
 
         let store = self.lock_store()?;

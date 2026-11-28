@@ -29,7 +29,7 @@ where
         let replay_events = std::mem::take(&mut self.scratch.semantic_delta.replay_events);
         let event_epochs = std::mem::take(&mut self.scratch.semantic_delta.event_epochs);
         let timing = TransactionTiming {
-            total_nanos: self.started_at.elapsed().as_nanos(),
+            total_nanos: self.graph.elapsed_nanos(self.started_at),
             evaluation_nanos: self.execution_state.evaluation_nanos,
             event_flush_nanos: self.scratch.staged_event_flush_nanos,
             commit_nanos,

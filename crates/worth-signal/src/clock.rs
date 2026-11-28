@@ -1,77 +1,65 @@
-#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
-#[derive(Debug, Clone, Copy)]
-pub struct RuntimeInstant(std::time::Instant);
+use std::sync::{Arc, OnceLock};
 
-#[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
-impl RuntimeInstant {
-    pub fn now() -> Self {
-        Self(std::time::Instant::now())
-    }
+use worth_execution::time::TimeSampler;
+use worth_foundational::time::{ClockSourceIdentity, MonotonicInstant};
 
-    pub fn elapsed(&self) -> std::time::Duration {
-        self.0.elapsed()
-    }
-}
+/// Serving-graph clock for optional elapsed-time telemetry. It never supplies
+/// the canonical clock ticks used by the temporal scheduler.
+#[derive(Clone)]
+pub(crate) struct SignalTelemetryClock(pub(crate) Arc<TimeSampler>);
 
-#[cfg(all(target_family = "wasm", target_os = "unknown"))]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct RuntimeInstant {
-    millis: f64,
-}
-
-#[cfg(all(target_family = "wasm", target_os = "unknown"))]
-impl RuntimeInstant {
-    pub fn now() -> Self {
-        Self {
-            millis: monotonic_now_millis(),
-        }
-    }
-
-    pub fn elapsed(&self) -> std::time::Duration {
-        duration_from_millis(monotonic_now_millis() - self.millis)
+impl std::fmt::Debug for SignalTelemetryClock {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SignalTelemetryClock")
+            .finish_non_exhaustive()
     }
 }
 
-#[cfg(all(target_family = "wasm", target_os = "unknown"))]
-fn monotonic_now_millis() -> f64 {
-    use wasm_bindgen::JsValue;
-
-    let global = js_sys::global();
-
-    if let Ok(performance) = js_sys::Reflect::get(&global, &JsValue::from_str("performance")) {
-        if let Some(millis) = call_zero_arg_number(&performance, "now") {
-            return millis;
-        }
+impl Default for SignalTelemetryClock {
+    fn default() -> Self {
+        static CLOCK: OnceLock<SignalTelemetryClock> = OnceLock::new();
+        CLOCK
+            .get_or_init(|| {
+                let source = ClockSourceIdentity::new(0);
+                #[cfg(not(all(target_family = "wasm", target_os = "unknown")))]
+                let adapter = worth_execution::time::SystemClockAdapter::new(source);
+                #[cfg(all(target_family = "wasm", target_os = "unknown"))]
+                let adapter = browser::BrowserClockAdapter::new(source);
+                Self(Arc::new(TimeSampler::new(Arc::new(adapter))))
+            })
+            .clone()
     }
+}
 
-    if let Ok(date) = js_sys::Reflect::get(&global, &JsValue::from_str("Date")) {
-        if let Some(millis) = call_zero_arg_number(&date, "now") {
-            return millis;
-        }
-    }
-
-    0.0
+pub(crate) fn elapsed_nanos(sampler: &TimeSampler, start: MonotonicInstant) -> u128 {
+    // A reboot invalidates this optional measurement, never the operation.
+    sampler
+        .monotonic()
+        .checked_duration_since(start)
+        .unwrap_or_default()
+        .as_nanos()
 }
 
 #[cfg(all(target_family = "wasm", target_os = "unknown"))]
-fn call_zero_arg_number(target: &wasm_bindgen::JsValue, name: &str) -> Option<f64> {
-    use wasm_bindgen::{JsCast, JsValue};
+mod browser;
 
-    let property = js_sys::Reflect::get(target, &JsValue::from_str(name)).ok()?;
-    let function = property.dyn_ref::<js_sys::Function>()?;
-    function.call0(target).ok()?.as_f64()
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::time::Duration;
+    use worth_execution::time::ControlledTime;
 
-#[cfg(all(target_family = "wasm", target_os = "unknown"))]
-fn duration_from_millis(millis: f64) -> std::time::Duration {
-    if millis <= 0.0 {
-        return std::time::Duration::ZERO;
-    }
-
-    let nanos = (millis * 1_000_000.0).round();
-    if nanos.is_finite() && nanos > 0.0 {
-        std::time::Duration::from_nanos(nanos.min(u64::MAX as f64) as u64)
-    } else {
-        std::time::Duration::ZERO
+    #[test]
+    fn elapsed_telemetry_uses_the_injected_clock_and_drops_cross_boot_measurements() {
+        let time = Arc::new(ControlledTime::at_unix_secs(10));
+        let sampler = TimeSampler::new(time.clone());
+        let start = sampler.monotonic();
+        time.advance(Duration::from_nanos(7));
+        time.step_wall_back(Duration::from_secs(1));
+        assert_eq!(elapsed_nanos(&sampler, start), 7);
+        time.reboot_epoch();
+        time.advance(Duration::from_nanos(9));
+        assert_eq!(elapsed_nanos(&sampler, start), 0);
     }
 }

@@ -47,7 +47,11 @@ impl std::fmt::Display for RelationalBridgePublicationDenial {
     }
 }
 
-impl std::error::Error for RelationalBridgePublicationDenial {}
+impl std::error::Error for RelationalBridgePublicationDenial {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.error)
+    }
+}
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RelationalBridgePublicationDeferred {
@@ -141,5 +145,27 @@ impl RelationalBridgePatchPublication {
 
     pub(crate) fn into_bridge_envelope(self) -> BridgeCommittedPatchEnvelope {
         self.envelope
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::adapter::{RelationalBridgeSourceError, RelationalBridgeSourceErrorTag};
+    use crate::error::{BridgeDeliveryError, BridgeRouteError, BridgeRouteErrorKind};
+    use worth_execution::report::{DiagnosticDetail, ReportProjection};
+
+    #[test]
+    fn delivery_report_keeps_the_publication_route_cause() {
+        let route = BridgeRouteError::new(BridgeRouteErrorKind::InvalidLoweringContract, "route");
+        let publication = RelationalBridgePublicationDenial::new(route, Default::default());
+        let source = RelationalBridgeSourceError::new(
+            RelationalBridgeSourceErrorTag::PublicationDenied(publication),
+            "source",
+        );
+        let delivery = BridgeDeliveryError::new(source.delivery_kind(), "delivery");
+
+        let report = delivery.to_operator_report(DiagnosticDetail::Standard);
+        assert_eq!(report.chain().len(), 3);
     }
 }

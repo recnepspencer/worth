@@ -357,3 +357,28 @@ fn restore_snapshot_with_active_policy_prunes_cold_richness_without_changing_ope
         "runtime restore counters should report the same coarse restore reason count as the canonical restore plan"
     );
 }
+
+#[test]
+fn uncached_restore_and_runtime_rebind_keep_the_receiver_clock() {
+    use std::sync::Arc;
+    use worth_execution::time::{ControlledTime, TimeSampler};
+
+    let mut graph = SignalGraph::new();
+    // Graph-only capture leaves the runtime's branch snapshot cache empty.
+    let snapshot = graph.capture_snapshot();
+    let sampler = Arc::new(TimeSampler::new(Arc::new(ControlledTime::at_unix_secs(1))));
+    let mut runtime = SignalRuntime::builder(graph)
+        .with_time_sampler(sampler.clone())
+        .with_kernel_defaults()
+        .build();
+
+    runtime.restore_snapshot(&snapshot).unwrap();
+    assert_eq!(runtime.time_sampler().monotonic(), sampler.monotonic());
+
+    let (rebound, _) = runtime
+        .graph()
+        .reconstitute_for_runtime_rebind()
+        .unwrap()
+        .into_parts();
+    assert_eq!(rebound.time_sampler().monotonic(), sampler.monotonic());
+}

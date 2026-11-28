@@ -10,13 +10,18 @@ use worth_signal::facade::{TemporalWakeId, WakeOrdinal};
 #[derive(Debug)]
 pub(super) struct BridgeManagedClockLease {
     live: AtomicBool,
+    pub(super) sampler: Option<super::sampled_clock::BridgeSampledClock>,
     _reservation: super::super::retention::BridgeRetentionReservation,
 }
 
 impl BridgeManagedClockLease {
-    pub(super) fn issue(reservation: super::super::retention::BridgeRetentionReservation) -> Self {
+    pub(super) fn issue(
+        reservation: super::super::retention::BridgeRetentionReservation,
+        sampler: Option<super::sampled_clock::BridgeSampledClock>,
+    ) -> Self {
         Self {
             live: AtomicBool::new(true),
+            sampler,
             _reservation: reservation,
         }
     }
@@ -259,6 +264,7 @@ pub enum BridgeManagedTemporalDenialKind {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BridgeManagedTemporalDenial {
+    signal_cause: Option<Box<worth_signal::facade::SignalError>>,
     kind: BridgeManagedTemporalDenialKind,
     detail: String,
 }
@@ -269,9 +275,15 @@ impl BridgeManagedTemporalDenial {
         detail: impl Into<String>,
     ) -> Self {
         Self {
+            signal_cause: None,
             kind,
             detail: detail.into(),
         }
+    }
+
+    pub(super) fn with_signal_cause(mut self, cause: worth_signal::facade::SignalError) -> Self {
+        self.signal_cause = Some(Box::new(cause));
+        self
     }
 
     pub fn kind(&self) -> BridgeManagedTemporalDenialKind {
@@ -328,3 +340,5 @@ pub(super) fn validate_identity(
         Ok(())
     }
 }
+
+mod report;

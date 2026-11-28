@@ -188,6 +188,8 @@ impl NodeArena {
 /// and snapshot storage.
 #[derive(Debug, Serialize)]
 pub struct SignalGraph {
+    #[serde(skip)]
+    pub(crate) telemetry_clock: crate::clock::SignalTelemetryClock,
     #[serde(skip, default)]
     pub(in crate::data::graph) initial_empty_origin: bool,
     #[serde(skip, default)]
@@ -261,6 +263,7 @@ impl<'de> Deserialize<'de> for SignalGraph {
         wire.arena
             .validate_deserialized_lane_alignment::<D::Error>()?;
         let mut graph = Self {
+            telemetry_clock: Default::default(),
             initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id: next_signal_graph_instance_id(),
@@ -303,6 +306,14 @@ impl SignalGraphLifecycleProbe {
 }
 
 impl SignalGraph {
+    pub(crate) fn time_sampler(&self) -> &worth_execution::time::TimeSampler {
+        &self.telemetry_clock.0
+    }
+
+    pub(crate) fn elapsed_nanos(&self, start: worth_foundational::time::MonotonicInstant) -> u128 {
+        crate::clock::elapsed_nanos(self.time_sampler(), start)
+    }
+
     pub fn lifecycle_probe(&self) -> SignalGraphLifecycleProbe {
         SignalGraphLifecycleProbe(std::sync::Arc::downgrade(&self.lifecycle_token))
     }

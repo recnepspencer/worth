@@ -131,13 +131,13 @@ pub(crate) fn build_effect_dependency_inputs_for_dependencies(
     dependencies: &[DependencyEdge],
     work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
-    let shape_handle_lookup_start = crate::clock::RuntimeInstant::now();
+    let shape_handle_lookup_start = graph.time_sampler().monotonic();
     let previous_shape_handle = graph
         .dependency_snapshot_shape_handle_for_evaluation(context.dependency_snapshot_id, work)?;
-    let shape_handle_lookup_nanos = shape_handle_lookup_start.elapsed().as_nanos();
-    let previous_snapshot_fetch_start = crate::clock::RuntimeInstant::now();
+    let shape_handle_lookup_nanos = graph.elapsed_nanos(shape_handle_lookup_start);
+    let previous_snapshot_fetch_start = graph.time_sampler().monotonic();
     let previous_snapshot = graph.get_dep_snapshot(node)?.clone();
-    let previous_snapshot_fetch_nanos = previous_snapshot_fetch_start.elapsed().as_nanos();
+    let previous_snapshot_fetch_nanos = graph.elapsed_nanos(previous_snapshot_fetch_start);
     let shape_scan = scan_dependency_shape(graph, dependencies, previous_snapshot.entries(), work)?;
     let (stable_shape_proved, inputs) = {
         if shape_scan.shape_stable
@@ -204,7 +204,7 @@ fn scan_dependency_shape(
             .checked_mul(std::mem::size_of::<u64>() + 2),
     )?;
     let mut stable_shape_versions = Vec::with_capacity(dependencies.len());
-    let version_scan_start = crate::clock::RuntimeInstant::now();
+    let version_scan_start = graph.time_sampler().monotonic();
     for dep in dependencies {
         let source = dep.source();
         let Some(previous_entry) = previous_entries.get(matched_entry_count) else {
@@ -233,7 +233,7 @@ fn scan_dependency_shape(
         matched_entry_count,
         changes,
         stable_shape_versions,
-        version_scan_nanos: version_scan_start.elapsed().as_nanos(),
+        version_scan_nanos: graph.elapsed_nanos(version_scan_start),
     })
 }
 
@@ -258,7 +258,7 @@ fn build_stable_shape_dependency_inputs(
             .checked_mul(3)
             .and_then(|n| n.checked_add(16)),
     )?;
-    let stable_proof_start = crate::clock::RuntimeInstant::now();
+    let stable_proof_start = graph.time_sampler().monotonic();
     let scan = DependencyInputScan::stable_shape(
         node,
         context.dependency_snapshot_id,
@@ -270,8 +270,8 @@ fn build_stable_shape_dependency_inputs(
         SignalError::internal("stable-shape dependency scan failed to produce a proof")
     })?;
     let versions = VersionVector::from_scan(&basis, &scan);
-    let stable_proof_nanos = stable_proof_start.elapsed().as_nanos();
-    let version_delta_start = crate::clock::RuntimeInstant::now();
+    let stable_proof_nanos = graph.elapsed_nanos(stable_proof_start);
+    let version_delta_start = graph.time_sampler().monotonic();
     let snapshot_delta = SnapshotDeltaRecord::for_version_update(
         node,
         previous_snapshot,
@@ -280,7 +280,7 @@ fn build_stable_shape_dependency_inputs(
     let dependency_snapshot_update = CommittedSnapshotUpdate::VersionOnly(
         VersionOnlySnapshotUpdate::from_basis_and_versions(basis, versions),
     );
-    let version_delta_nanos = version_delta_start.elapsed().as_nanos();
+    let version_delta_nanos = graph.elapsed_nanos(version_delta_start);
     telemetry::record_stable_shape_timing(
         graph,
         shape_handle_lookup_nanos,
@@ -308,7 +308,7 @@ fn build_replacement_dependency_inputs(
     version_scan_nanos: u128,
     work: &mut EvaluationWork<'_, '_>,
 ) -> Result<EffectDependencyInputs, SignalError> {
-    let replacement_build_start = crate::clock::RuntimeInstant::now();
+    let replacement_build_start = graph.time_sampler().monotonic();
     let (snapshot, changes) =
         build_replacement_dependency_snapshot(graph, dependencies, previous_snapshot, work)?;
 
@@ -320,7 +320,7 @@ fn build_replacement_dependency_inputs(
     let dependency_snapshot_update = CommittedSnapshotUpdate::Replace(
         ReplacementSnapshotUpdate::from_snapshot_with_work(snapshot, work)?,
     );
-    let replacement_build_nanos = replacement_build_start.elapsed().as_nanos();
+    let replacement_build_nanos = graph.elapsed_nanos(replacement_build_start);
     telemetry::record_replacement_timing(
         graph,
         shape_handle_lookup_nanos,

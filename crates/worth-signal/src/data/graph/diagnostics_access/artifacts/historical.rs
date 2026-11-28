@@ -22,6 +22,7 @@ impl SignalGraph {
         }
         let mut restored =
             SignalGraph::restore_from_checkpoint_authority(&snapshot.checkpoint_image.authority)?;
+        restored.telemetry_clock = self.telemetry_clock.clone();
         let active_nodes = restored.active_node_count() as u64;
         restored.with_telemetry(|telemetry| {
             telemetry.checkpoint.restore_authority_breadth += active_nodes;

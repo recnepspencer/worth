@@ -139,3 +139,61 @@ fn insufficient_bridge_bytes_deny_before_clock_membership() {
         0
     );
 }
+
+#[test]
+fn sampled_clock_rejects_raw_observations_and_reboot_before_temporal_movement() {
+    use crate::facade::{BridgeManagedClockObservationOutcome, BridgeManagedClockObservationParts};
+    use std::time::Duration;
+    use worth_execution::time::{ControlledTime, TimeSampler};
+
+    let (owner, lowering) = owner(BridgeConditionalRetentionBudget::development());
+    let view = owner.conditional_execution_view();
+    let time = Arc::new(ControlledTime::at_unix_secs(10));
+    let sampler = Arc::new(TimeSampler::new(time.clone()));
+    let binding = view
+        .install_sampled_managed_clock(
+            BridgeManagedClockInstallationParts {
+                lowering: &lowering,
+                binding_identity: Arc::from("clock:sealed"),
+                source_identity: Arc::from("clock:source"),
+                timeline_identity: Arc::from("clock:timeline"),
+                maximum_active_intents: 1,
+                maximum_due_wakes_per_observation: 1,
+            },
+            sampler,
+        )
+        .unwrap();
+    owner
+        .reconcile_managed_temporal_intent(super::active(&binding, "intent:one", 1, 5))
+        .unwrap();
+
+    let raw = view.observe_managed_clock(BridgeManagedClockObservationParts {
+        binding: &binding,
+        source_identity: "clock:source",
+        timeline_identity: "clock:timeline",
+        sequence: 1,
+        observed_coordinate: 5,
+    });
+    assert!(
+        matches!(raw, Err(error) if error.kind() == BridgeManagedTemporalDenialKind::ForeignClockSource)
+    );
+
+    time.advance(Duration::from_nanos(4));
+    time.step_wall_back(Duration::from_secs(20));
+    let before_due = view.observe_sampled_managed_clock(&binding, 1).unwrap();
+    let BridgeManagedClockObservationOutcome::Accepted(before_due) = before_due else {
+        panic!("first observation should advance");
+    };
+    assert_eq!(before_due.observed_coordinate(), 4);
+    assert!(before_due.due().wakes().is_empty());
+
+    time.reboot_epoch();
+    time.advance(Duration::from_nanos(5));
+    let after_reboot = view.observe_sampled_managed_clock(&binding, 2);
+    assert!(
+        matches!(after_reboot, Err(error) if error.kind() == BridgeManagedTemporalDenialKind::ForeignClockTimeline)
+    );
+    let closure = owner.close_managed_clock(binding).unwrap();
+    assert_eq!(closure.scheduled_wakes(), 1);
+    assert_eq!(closure.ready_wakes(), 0);
+}

@@ -2,6 +2,9 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 
 use super::context::BridgeErrorContext;
+use super::kind_report::BridgeErrorKind;
+
+mod report;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeTypedError<K> {
@@ -42,7 +45,11 @@ impl<K> std::fmt::Display for BridgeTypedError<K> {
     }
 }
 
-impl<K: std::fmt::Debug> std::error::Error for BridgeTypedError<K> {}
+impl<K: BridgeErrorKind> std::error::Error for BridgeTypedError<K> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        self.kind.source()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BridgeMessageError<Tag> {

@@ -38,6 +38,7 @@ pub struct RuntimeBridgeBuilder<
     BranchHeadState = MissingTruthBranchHeadSource,
     MappingState = MissingMappingRegistrations,
 > {
+    pub(super) diagnostic_sink: Arc<dyn worth_execution::report::DiagnosticSink>,
     pub(super) policy: BridgeRuntimePolicy,
     pub(super) committed_patch_source: PatchState,
     pub(super) snapshot_read_source: SnapshotState,
@@ -79,6 +80,7 @@ impl
 {
     pub fn new() -> Self {
         Self {
+            diagnostic_sink: Arc::new(worth_execution::report::NoopDiagnosticSink),
             policy: BridgeRuntimePolicy::default(),
             committed_patch_source: MissingCommittedPatchSource,
             snapshot_read_source: MissingSnapshotReadSource,
@@ -108,5 +110,18 @@ impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState> std:
                 &self.aspect_registrations.len(),
             )
             .finish()
+    }
+}
+
+impl<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
+    RuntimeBridgeBuilder<PatchState, SnapshotState, SignalState, BranchHeadState, MappingState>
+{
+    /// Receives operator reports disclosed at the installed diagnostics tier.
+    pub fn with_diagnostic_sink(
+        mut self,
+        sink: Arc<dyn worth_execution::report::DiagnosticSink>,
+    ) -> Self {
+        self.diagnostic_sink = sink;
+        self
     }
 }

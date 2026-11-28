@@ -5,6 +5,7 @@ impl BridgeDiagnosticsFacade {
     pub(crate) fn for_authored_installation(&self) -> Self {
         Self {
             config: Arc::clone(&self.config),
+            operator_reports: self.operator_reports.clone(),
             state: Arc::new(RwLock::new(Default::default())),
         }
     }

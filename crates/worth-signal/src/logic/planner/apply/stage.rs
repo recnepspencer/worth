@@ -7,7 +7,6 @@ mod strategy;
 
 pub(in crate::logic::planner) use concurrent::{prepare_checked_apply_map, PreparedSignalApplyMap};
 
-use crate::clock::RuntimeInstant;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::SignalError;
 use crate::data::graph::SignalGraph;
@@ -149,7 +148,7 @@ fn finalize_stage_results(
     report: &mut ExecutionReport,
     stage_record: &mut StageExecutionRecord,
 ) -> Result<(), SignalError> {
-    let semantic_finalize_start = RuntimeInstant::now();
+    let semantic_finalize_start = graph.time_sampler().monotonic();
     match finalize_work {
         StageFinalizeWork::Serial(batch) => {
             let ready = batch.into_ready_for_finalize()?;
@@ -166,7 +165,7 @@ fn finalize_stage_results(
             )?;
         }
     }
-    stage_record.semantic_finalize_duration_nanos = semantic_finalize_start.elapsed().as_nanos();
+    stage_record.semantic_finalize_duration_nanos = graph.elapsed_nanos(semantic_finalize_start);
     Ok(())
 }
 

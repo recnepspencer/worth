@@ -3,7 +3,6 @@ use worth_execution::{
 };
 use worth_foundational::PartitionIdentity;
 
-use crate::clock::RuntimeInstant;
 use crate::data::comparator::ComparatorPolicyResolver;
 use crate::data::error::{SignalError, SignalExecutionStop, SignalPublicationDisposition};
 use crate::data::graph::SignalGraph;
@@ -135,7 +134,7 @@ pub(super) fn run_grouped_concurrent_apply_pass(
     stage_record.apply_group_count = plan.groups.len() as u32;
     stage_record.concurrent_apply_task_count = tasks.len() as u32;
 
-    let dependency_input_start = RuntimeInstant::now();
+    let dependency_input_start = graph.time_sampler().monotonic();
     let dependency_inputs = if tasks
         .iter()
         .any(|task| task.execution().dependency_updates() != 0)
@@ -149,7 +148,7 @@ pub(super) fn run_grouped_concurrent_apply_pass(
     } else {
         collect_effect_dependency_inputs_iter(graph, tasks.iter().map(LoweredTask::node))?
     };
-    let dependency_input_nanos = dependency_input_start.elapsed().as_nanos();
+    let dependency_input_nanos = graph.elapsed_nanos(dependency_input_start);
     graph.with_telemetry(|telemetry| {
         telemetry.execution.dependency_input_build_nanos += dependency_input_nanos
     });

@@ -2,7 +2,7 @@ use crate::boundary::errors::WorthSignalJsError;
 use crate::expression::model::SignalValue;
 
 use super::super::aspects::{checked_grid_cells, checked_packed_capacity};
-use super::super::debug::{perf_now_ms, wasm_debug};
+use super::super::debug::wasm_debug;
 use super::super::state::{KeyedEnsureStats, KeyedTarget, PackedFieldReadStats};
 use super::super::RuntimeCore;
 
@@ -38,7 +38,7 @@ impl RuntimeCore {
         keys: Vec<String>,
         fields: Vec<String>,
     ) -> Result<Vec<f32>, WorthSignalJsError> {
-        let started_at = perf_now_ms();
+        let started_at = self.runtime.time_sampler().monotonic();
         let targets = self.ensure_keyed_targets(family_id, &keys)?;
         let mut read_stats = self.bulk_evaluate_targets(&targets)?;
         let mut packed = Vec::with_capacity(keys.len().saturating_mul(fields.len()));
@@ -46,7 +46,7 @@ impl RuntimeCore {
         wasm_debug(format!(
             "[worth-signals-wasm] packed-many:read family={family_id} keys={} elapsed_ms={:.1} runtime_read_ms={:.1} field_extract_ms={:.1} source_reads={} recipe_reads={} recipe_cold_reads={} fields_packed={}",
             read_stats.key_reads,
-            perf_now_ms() - started_at,
+            self.perf_elapsed_ms(started_at),
             read_stats.runtime_read_ms,
             read_stats.field_extract_ms,
             read_stats.source_reads,
@@ -64,23 +64,23 @@ impl RuntimeCore {
         rows: u32,
         fields: Vec<String>,
     ) -> Result<Vec<f32>, WorthSignalJsError> {
-        let ensure_started_at = perf_now_ms();
+        let ensure_started_at = self.runtime.time_sampler().monotonic();
         let targets = self.ensure_keyed_grid_targets(family_id, columns, rows)?;
         wasm_debug(format!(
             "[worth-signals-wasm] packed-grid:ensure family={family_id} elapsed_ms={:.1} source_hits={} source_created={} recipe_hits={} recipe_created={}",
-            perf_now_ms() - ensure_started_at,
+            self.perf_elapsed_ms(ensure_started_at),
             targets.1.source_hits,
             targets.1.source_created,
             targets.1.recipe_hits,
             targets.1.recipe_created
         ));
-        let extract_started_at = perf_now_ms();
+        let extract_started_at = self.runtime.time_sampler().monotonic();
         let mut read_stats = self.bulk_evaluate_targets(&targets.0)?;
         let mut packed = Vec::with_capacity(checked_packed_capacity(columns, rows, fields.len())?);
         self.pack_fields_from_targets(&targets.0, &fields, &mut packed, &mut read_stats)?;
         wasm_debug(format!(
             "[worth-signals-wasm] packed-grid:extract family={family_id} elapsed_ms={:.1} runtime_read_ms={:.1} field_extract_ms={:.1} keys={} source_reads={} recipe_reads={} recipe_cold_reads={} fields_packed={}",
-            perf_now_ms() - extract_started_at,
+            self.perf_elapsed_ms(extract_started_at),
             read_stats.runtime_read_ms,
             read_stats.field_extract_ms,
             read_stats.key_reads,
@@ -106,7 +106,7 @@ impl RuntimeCore {
         if row >= rows || start_column >= columns {
             return Ok(Vec::new());
         }
-        let ensure_started_at = perf_now_ms();
+        let ensure_started_at = self.runtime.time_sampler().monotonic();
         let targets = self.ensure_keyed_rect_targets(
             family_id,
             columns,
@@ -122,7 +122,7 @@ impl RuntimeCore {
             start_column,
             width,
             height,
-            perf_now_ms() - ensure_started_at,
+            self.perf_elapsed_ms(ensure_started_at),
             targets.1.source_hits,
             targets.1.source_created,
             targets.1.recipe_hits,
@@ -130,7 +130,7 @@ impl RuntimeCore {
         ));
         let clamped_width = width.min(columns.saturating_sub(start_column));
         let clamped_height = height.min(rows.saturating_sub(row));
-        let extract_started_at = perf_now_ms();
+        let extract_started_at = self.runtime.time_sampler().monotonic();
         let mut read_stats = self.bulk_evaluate_targets(&targets.0)?;
         let mut packed = Vec::with_capacity(checked_packed_capacity(
             clamped_width,
@@ -144,7 +144,7 @@ impl RuntimeCore {
             start_column,
             clamped_width,
             clamped_height,
-            perf_now_ms() - extract_started_at,
+            self.perf_elapsed_ms(extract_started_at),
             read_stats.runtime_read_ms,
             read_stats.field_extract_ms,
             read_stats.key_reads,
@@ -162,16 +162,16 @@ impl RuntimeCore {
         columns: u32,
         rows: u32,
     ) -> Result<(), WorthSignalJsError> {
-        let ensure_started_at = perf_now_ms();
+        let ensure_started_at = self.runtime.time_sampler().monotonic();
         let targets = self.ensure_keyed_grid_targets(family_id, columns, rows)?;
-        let evaluate_started_at = perf_now_ms();
+        let evaluate_started_at = self.runtime.time_sampler().monotonic();
         let read_stats = self.bulk_evaluate_targets(&targets.0)?;
         wasm_debug(format!(
             "[worth-signals-wasm] keyed-grid:prewarm family={family_id} size={}x{} ensure_ms={:.1} evaluate_ms={:.1} source_hits={} source_created={} recipe_hits={} recipe_created={} source_reads={} recipe_reads={} recipe_cold_reads={} runtime_read_ms={:.1}",
             columns,
             rows,
-            perf_now_ms() - ensure_started_at,
-            perf_now_ms() - evaluate_started_at,
+            self.perf_elapsed_ms(ensure_started_at),
+            self.perf_elapsed_ms(evaluate_started_at),
             targets.1.source_hits,
             targets.1.source_created,
             targets.1.recipe_hits,
@@ -208,7 +208,7 @@ impl RuntimeCore {
                     )));
                 }
             };
-            let extract_started_at = perf_now_ms();
+            let extract_started_at = self.runtime.time_sampler().monotonic();
             for field in fields {
                 let Some((_, value)) = object.iter().find(|(candidate, _)| candidate == field)
                 else {
@@ -227,7 +227,7 @@ impl RuntimeCore {
                     }
                 }
             }
-            stats.field_extract_ms += perf_now_ms() - extract_started_at;
+            stats.field_extract_ms += self.perf_elapsed_ms(extract_started_at);
             stats.fields_packed = stats.fields_packed.saturating_add(fields.len());
         }
         Ok(())
@@ -255,7 +255,7 @@ impl RuntimeCore {
             }
         }
         stats.key_reads = targets.len();
-        let read_started_at = perf_now_ms();
+        let read_started_at = self.runtime.time_sampler().monotonic();
         let evaluator = self.evaluator();
         let nodes = targets.iter().map(|target| target.node).collect::<Vec<_>>();
         let _ = self
@@ -263,7 +263,7 @@ impl RuntimeCore {
             .targets(nodes)
             .read_many(&self.store, &evaluator)
             .map_err(WorthSignalJsError::from)?;
-        stats.runtime_read_ms = perf_now_ms() - read_started_at;
+        stats.runtime_read_ms = self.perf_elapsed_ms(read_started_at);
         Ok(stats)
     }
 

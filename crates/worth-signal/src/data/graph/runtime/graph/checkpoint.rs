@@ -118,6 +118,7 @@ impl SignalGraph {
                 observation_sessions.shared_last_completion(),
             ));
         let mut graph = Self {
+            telemetry_clock: Default::default(),
             initial_empty_origin: false,
             lifecycle_token: Default::default(),
             instance_id,

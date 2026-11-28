@@ -85,8 +85,14 @@ fn current_and_explicit_parent_head_forks_share_parent_basis_without_switching_a
 
 #[test]
 fn explicit_snapshot_fork_anchors_child_to_requested_snapshot_without_active_branch_side_effects() {
-    let graph = SignalGraph::new();
-    let mut runtime = SignalRuntime::builder(graph).with_kernel_defaults().build();
+    use std::sync::Arc;
+    use worth_execution::time::{ControlledTime, TimeSampler};
+
+    let sampler = Arc::new(TimeSampler::new(Arc::new(ControlledTime::at_unix_secs(1))));
+    let mut runtime = SignalRuntime::builder(SignalGraph::new())
+        .with_time_sampler(sampler.clone())
+        .with_kernel_defaults()
+        .build();
 
     let base_snapshot = runtime
         .capture_snapshot()
@@ -151,6 +157,11 @@ fn explicit_snapshot_fork_anchors_child_to_requested_snapshot_without_active_bra
         1
     );
     assert_eq!(runtime.observe().known_branches().len(), 2);
+
+    runtime
+        .switch_branch(receipt.created_branch().clone())
+        .unwrap();
+    assert_eq!(runtime.time_sampler().monotonic(), sampler.monotonic());
 }
 
 #[test]

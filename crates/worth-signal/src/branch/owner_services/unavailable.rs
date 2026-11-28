@@ -6,3 +6,11 @@
 #[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct SignalOwnerUnavailable;
+
+impl std::fmt::Display for SignalOwnerUnavailable {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter.write_str("The Signal owner is unavailable.")
+    }
+}
+
+impl std::error::Error for SignalOwnerUnavailable {}

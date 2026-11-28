@@ -9,20 +9,15 @@ thread_local! {
     static WASM_DEBUG_EVENTS: RefCell<Vec<String>> = const { RefCell::new(Vec::new()) };
 }
 
-pub(super) fn perf_now_ms() -> f64 {
-    #[cfg(target_arch = "wasm32")]
-    {
-        return js_sys::Date::now();
-    }
-
-    #[cfg(not(target_arch = "wasm32"))]
-    {
-        use std::sync::OnceLock;
-        use std::time::Instant;
-
-        static START: OnceLock<Instant> = OnceLock::new();
-        let start = START.get_or_init(Instant::now);
-        start.elapsed().as_secs_f64() * 1000.0
+impl super::RuntimeCore {
+    pub(super) fn perf_elapsed_ms(&self, start: worth_foundational::time::MonotonicInstant) -> f64 {
+        self.runtime
+            .time_sampler()
+            .monotonic()
+            .checked_duration_since(start)
+            .unwrap_or_default()
+            .as_secs_f64()
+            * 1000.0
     }
 }
 

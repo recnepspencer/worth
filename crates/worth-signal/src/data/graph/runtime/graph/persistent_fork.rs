@@ -117,6 +117,7 @@ impl SignalGraph {
         ));
         (
             Self {
+                telemetry_clock: self.telemetry_clock.clone(),
                 initial_empty_origin: false,
                 lifecycle_token: Default::default(),
                 instance_id: self.instance_id,

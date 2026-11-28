@@ -1,10 +1,10 @@
-use crate::clock::RuntimeInstant;
 use crate::data::handle::NodeId;
 use crate::data::output::ChangedRegion;
 use crate::data::proof::DirtyBatchEntry;
 use crate::data::telemetry::RuntimeTelemetry;
 use crate::logic::checkpoint::CheckpointRuntime;
 use crate::logic::events::EventBus;
+use worth_foundational::time::MonotonicInstant;
 
 use super::super::super::config::SignalRuntimeConfig;
 use super::super::super::state::{
@@ -49,7 +49,7 @@ where
     pub(in crate::logic::transaction::runtime) poisoned: bool,
     pub(in crate::logic::transaction::runtime) finished: bool,
     pub(in crate::logic::transaction::runtime) execution_state: TransactionExecutionState,
-    pub(in crate::logic::transaction::runtime) started_at: RuntimeInstant,
+    pub(in crate::logic::transaction::runtime) started_at: MonotonicInstant,
     pub(in crate::logic::transaction::runtime) commit_posture: TransactionCommitPosture,
 }
 
@@ -155,7 +155,7 @@ fn collect_owned_inline_type_sizes(census: &mut crate::inline_type_sizes::Census
         owner.field::<bool>("poisoned");
         owner.field::<bool>("finished");
         owner.field::<TransactionExecutionState>("execution_state");
-        owner.field::<RuntimeInstant>("started_at");
+        owner.field::<MonotonicInstant>("started_at");
         owner.field::<TransactionCommitPosture>("commit_posture");
     }
 }

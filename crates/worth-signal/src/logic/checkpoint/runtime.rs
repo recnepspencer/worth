@@ -1,6 +1,5 @@
 //! Tier-0 checkpoint runtime for batched domain refresh.
 
-use crate::clock::RuntimeInstant;
 use crate::data::checkpoint::CheckpointBarrier;
 use crate::data::checkpoint_policy::CheckpointPolicy;
 use crate::data::dirty_set::{BatchedDirtySet, DomainImpact};
@@ -18,6 +17,7 @@ pub(crate) use replacement_test_observation::CheckpointReplacementObservation;
 /// Runtime state for batched Tier-0 signal scheduling.
 #[derive(Debug, Clone)]
 pub struct CheckpointRuntime<D: Copy + Ord, I: Copy + Ord> {
+    clock: crate::clock::SignalTelemetryClock,
     dirty: BatchedDirtySet<D, I>,
     policy: CheckpointPolicy<D>,
     telemetry: RuntimeTelemetry,
@@ -26,6 +26,7 @@ pub struct CheckpointRuntime<D: Copy + Ord, I: Copy + Ord> {
 impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
     pub(crate) fn fork_persistent(&mut self) -> Self {
         Self {
+            clock: self.clock.clone(),
             dirty: self.dirty.fork_persistent(),
             policy: self.policy.fork_persistent(),
             telemetry: self.telemetry,
@@ -35,6 +36,7 @@ impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
     #[cfg(test)]
     pub(crate) fn fork_storage_identity(&self) -> Self {
         Self {
+            clock: self.clock.clone(),
             dirty: self.dirty.fork_storage_identity(),
             policy: self.policy.fork_storage_identity(),
             telemetry: self.telemetry,
@@ -48,8 +50,14 @@ impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
     }
 
     /// Create a new runtime with a per-domain checkpoint policy.
+    pub(crate) fn bind_telemetry_clock(&mut self, clock: &crate::clock::SignalTelemetryClock) {
+        self.clock = clock.clone();
+    }
+
+    /// Create a new runtime with a per-domain checkpoint policy.
     pub fn new(policy: CheckpointPolicy<D>) -> Self {
         Self {
+            clock: Default::default(),
             dirty: BatchedDirtySet::new(),
             policy,
             telemetry: RuntimeTelemetry::default(),
@@ -131,7 +139,7 @@ impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
     where
         E: CheckpointEvaluator<Domain = D, Impact = I>,
     {
-        let flush_start = RuntimeInstant::now();
+        let flush_start = self.clock.0.monotonic();
         let domains: Vec<D> = self
             .dirty
             .dirty_domains()
@@ -148,7 +156,8 @@ impl<D: Copy + Ord, I: Copy + Ord> CheckpointRuntime<D, I> {
 
         if capture_telemetry {
             self.telemetry.checkpoint.checkpoint_flushes += 1;
-            self.telemetry.checkpoint.checkpoint_flush_nanos += flush_start.elapsed().as_nanos();
+            self.telemetry.checkpoint.checkpoint_flush_nanos +=
+                crate::clock::elapsed_nanos(&self.clock.0, flush_start);
         }
 
         Ok(domains.len())

@@ -1,5 +1,4 @@
 mod materialized;
-use crate::clock::RuntimeInstant;
 use crate::data::dependency::{
     CommittedSnapshotUpdate, DependencySnapshot, SnapshotDeltaRecord, SnapshotStorageStrategy,
 };
@@ -247,7 +246,7 @@ impl SignalGraph {
             .captures_observation_surface(
                 crate::logic::transaction::SignalObservationSurface::OptionalTelemetry,
             )
-            .then(RuntimeInstant::now);
+            .then(|| self.time_sampler().monotonic());
         let result = match commit {
             ClassifiedSnapshotBatchCommit::StableShape(commit) => {
                 self.apply_stable_shape_snapshot_batch_commit(commit)
@@ -257,7 +256,7 @@ impl SignalGraph {
             }
         };
         if let Some(commit_start) = commit_start {
-            let elapsed_nanos = commit_start.elapsed().as_nanos();
+            let elapsed_nanos = self.elapsed_nanos(commit_start);
             self.with_telemetry(|telemetry| {
                 telemetry.storage.snapshot_batch_commit_nanos += elapsed_nanos;
             });

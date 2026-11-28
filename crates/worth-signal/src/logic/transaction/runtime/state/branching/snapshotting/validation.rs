@@ -25,6 +25,7 @@ where
         }
         let mut graph =
             SignalGraph::restore_from_checkpoint_authority(&snapshot.checkpoint_image.authority)?;
+        graph.telemetry_clock = self.graph.telemetry_clock.clone();
         let active_nodes = graph.active_node_count() as u64;
         graph.with_telemetry(|telemetry| {
             telemetry.checkpoint.restore_authority_breadth += active_nodes

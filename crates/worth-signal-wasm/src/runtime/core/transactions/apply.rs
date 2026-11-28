@@ -6,7 +6,7 @@ use worth_signal::facade::{specialist::EvaluationVerdict, SignalError};
 use crate::boundary::errors::WorthSignalJsError;
 use crate::runtime::summaries::RunSummary;
 
-use super::super::debug::{perf_now_ms, wasm_debug};
+use super::super::debug::wasm_debug;
 use super::super::keyed_families::set_rgba_signal_value;
 use super::super::state::{DenseGridFamily, PendingCallbackDependencyPatch, SharedStore};
 use super::super::RuntimeCore;
@@ -38,14 +38,14 @@ impl RuntimeCore {
         &mut self,
         ops: Vec<TransactionOp>,
     ) -> Result<RunSummary, WorthSignalJsError> {
-        let started_at = perf_now_ms();
+        let started_at = self.runtime.time_sampler().monotonic();
         wasm_debug(format!("[worth-signals-wasm] tx:start ops={}", ops.len()));
         let previous = self.lock_store()?.clone();
         let changes = self.collect_changes(&ops)?;
         wasm_debug(format!(
             "[worth-signals-wasm] tx:collect-done changes={} elapsed_ms={:.1}",
             changes.len(),
-            perf_now_ms() - started_at
+            self.perf_elapsed_ms(started_at)
         ));
         let store = self.store.clone();
         let dense_grids = self.dense_grids.clone();
@@ -111,7 +111,7 @@ impl RuntimeCore {
                     "[worth-signals-wasm] tx:done touched={} evaluated={} elapsed_ms={:.1}",
                     result.touched_nodes,
                     result.evaluation_summary.nodes_evaluated,
-                    perf_now_ms() - started_at
+                    self.perf_elapsed_ms(started_at)
                 ));
                 Ok(RunSummary {
                     touched_nodes: result.touched_nodes,
@@ -128,7 +128,7 @@ impl RuntimeCore {
             Err(err) => {
                 wasm_debug(format!(
                     "[worth-signals-wasm] tx:error elapsed_ms={:.1} denial={:?}",
-                    perf_now_ms() - started_at,
+                    self.perf_elapsed_ms(started_at),
                     err
                 ));
                 self.restore_store(previous)?;
