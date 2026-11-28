@@ -1437,7 +1437,6 @@ guidance = "In-place document history is retired. Branch-native workspace histor
 
 [[source_identifier_denials]]
 root = "workspaces"
-exclude_paths = ["workspaces/worth-query/crates/worth-query-court-decl-host-native-fragments/tests/worth_query_court_decl_host_native_fragments/compile_fail/inverse_undo/ui/correction_derive.rs"]
 forbidden_identifiers = ["WorthQueryCorrection", "derive_worth_query_correction", "preimage_fields"]
 guidance = "Query application declarations may not author inverse undo"
 

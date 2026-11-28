@@ -8,7 +8,6 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
-trybuild = "=1.0.125"
 worth-execution = { path = "../../../../crates/worth-execution" }
 worth-foundational = { path = "../../../../crates/worth-foundational" }
 worth-relational = { path = "../../../../crates/worth-relational" }

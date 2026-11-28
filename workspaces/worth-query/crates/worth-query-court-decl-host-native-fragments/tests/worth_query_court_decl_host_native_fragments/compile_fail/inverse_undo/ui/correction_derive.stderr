@@ -1,5 +1,0 @@
-error[E0433]: cannot find `WorthQueryCorrection` in `facade`
- --> tests/worth_query_court_decl_host_native_fragments/compile_fail/inverse_undo/ui/correction_derive.rs:1:36
-  |
-1 | #[derive(worth_query_decl::facade::WorthQueryCorrection)]
-  |                                    ^^^^^^^^^^^^^^^^^^^^ could not find `WorthQueryCorrection` in `facade`
