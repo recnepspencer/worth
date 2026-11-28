@@ -124,6 +124,14 @@ impl crate::ReadmittedApplicationHome {
             relational,
             mut context,
         } = self;
+        if let Some(store) = context
+            .historical_bases
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+        {
+            store.clear_cached_memberships();
+        }
         let prior_checkpoint = match crate::checkpoint::close_settlement::settle(
             &context.serving,
             &context.checkpoint,

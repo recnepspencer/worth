@@ -29,13 +29,16 @@ impl<'a> QueryRequestExecution<'a> {
         }
     }
 
-    /// Narrows a caller-owned `lease` to any tighter installed placement
-    /// ceiling (workers, memory, or work) while preserving the caller's exact
-    /// lease lineage, live memory holds, deadline, and cancellation token.
+    /// Narrows a caller-owned `lease` to any tighter installed placement or
+    /// session policy ceiling (workers, memory, work, cancellation, deadline)
+    /// while preserving the caller's exact lease lineage and live memory holds.
     pub(super) fn under_lease_within_placement(
         lease: &ExecutionResourceLease<'a>,
         placement: RuntimeWorldExecutionPlacement<'a>,
-        deadline: Option<worth_execution::MonotonicDeadline>,
+        ceiling_policy: Option<worth_foundational::ExecutionRequestPolicy>,
+        scope_cancellation: CancellationToken,
+        caller_deadline: Option<worth_execution::MonotonicDeadline>,
+        scope_deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
         let placement = super::test_placement::placed(placement);
         let placement_policy = match placement {
@@ -43,24 +46,31 @@ impl<'a> QueryRequestExecution<'a> {
             | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
         };
         let caller_policy = *lease.policy();
-        let effective_workers = caller_policy
+        let mut effective_workers = caller_policy
             .max_workers()
             .min(placement_policy.max_workers());
-        let effective_memory = min_option(
+        let mut effective_memory = min_option(
             caller_policy.charged_memory_bytes(),
             placement_policy.charged_memory_bytes(),
         );
-        let effective_work = min_option(
+        let mut effective_work = min_option(
             caller_policy.work_ceiling(),
             placement_policy.work_ceiling(),
         );
+        if let Some(ceiling) = ceiling_policy {
+            effective_workers = effective_workers.min(ceiling.max_workers());
+            effective_memory = min_option(effective_memory, ceiling.charged_memory_bytes());
+            effective_work = min_option(effective_work, ceiling.work_ceiling());
+        }
         let narrowed = narrowed_policy_with_workers(
             caller_policy,
             effective_workers,
             effective_memory,
             effective_work,
         );
-        let controlled = lease.controlled_child(CancellationToken::new(), deadline.clone());
+        let deadline =
+            worth_execution::MonotonicDeadline::meet_optional(caller_deadline, scope_deadline);
+        let controlled = lease.controlled_child(scope_cancellation.clone(), deadline.clone());
         let final_lease = if narrowed == caller_policy {
             Ok(controlled)
         } else {
@@ -71,7 +81,7 @@ impl<'a> QueryRequestExecution<'a> {
             })
         };
         Self {
-            cancellation: CancellationToken::new(),
+            cancellation: scope_cancellation,
             deadline,
             declared_work: effective_work,
             certified_seed: super::test_placement::certifying(),
@@ -85,23 +95,31 @@ impl<'a> QueryRequestExecution<'a> {
 
     /// Preserves a lease-free `ExecutionRequest::serial` caller's backing,
     /// shared `SerialMemoryBudget`, deadline, and cancellation token while
-    /// enforcing any tighter installed placement ceilings atomically on every
-    /// lease reservation.
+    /// enforcing any tighter installed placement or session policy ceilings
+    /// atomically on every lease reservation.
     pub fn open_serial_request(
         placement: RuntimeWorldExecutionPlacement<'a>,
         caller: worth_execution::ExecutionRequest<'a, 'a>,
+        ceiling_policy: Option<worth_foundational::ExecutionRequestPolicy>,
+        scope_cancellation: CancellationToken,
+        scope_deadline: Option<worth_execution::MonotonicDeadline>,
     ) -> Self {
         let placement = super::test_placement::placed(placement);
         let placement_policy = match placement {
             RuntimeWorldExecutionPlacement::Serial(policy)
             | RuntimeWorldExecutionPlacement::Leased { policy, .. } => policy,
         };
-        let effective_work = min_option(caller.work_ceiling(), placement_policy.work_ceiling());
-        let effective_memory = min_option(
+        let mut effective_work = min_option(caller.work_ceiling(), placement_policy.work_ceiling());
+        let mut effective_memory = min_option(
             caller.memory_limit(),
             placement_policy.charged_memory_bytes(),
         );
-        let deadline = caller.deadline();
+        if let Some(ceiling) = ceiling_policy {
+            effective_work = min_option(effective_work, ceiling.work_ceiling());
+            effective_memory = min_option(effective_memory, ceiling.charged_memory_bytes());
+        }
+        let deadline =
+            worth_execution::MonotonicDeadline::meet_optional(caller.deadline(), scope_deadline);
         match placement {
             RuntimeWorldExecutionPlacement::Serial(policy) => {
                 let narrowed_pol = narrowed_policy_with_workers(
@@ -111,7 +129,7 @@ impl<'a> QueryRequestExecution<'a> {
                     effective_work,
                 );
                 Self {
-                    cancellation: CancellationToken::new(),
+                    cancellation: scope_cancellation.clone(),
                     deadline: deadline.clone(),
                     declared_work: effective_work,
                     certified_seed: super::test_placement::certifying(),
@@ -121,7 +139,7 @@ impl<'a> QueryRequestExecution<'a> {
                                 LeaseRequest {
                                     policy: narrowed_pol,
                                     deadline,
-                                    cancellation: CancellationToken::new(),
+                                    cancellation: scope_cancellation,
                                 },
                                 caller,
                             ),
@@ -131,9 +149,21 @@ impl<'a> QueryRequestExecution<'a> {
                 }
             }
             RuntimeWorldExecutionPlacement::Leased { authority, policy } => {
-                let narrowed = narrowed_policy(policy, effective_memory, effective_work);
+                let caller_workers = std::num::NonZeroUsize::new(caller.max_workers())
+                    .unwrap_or(std::num::NonZeroUsize::MIN);
+                let effective_workers = ceiling_policy
+                    .map_or(policy.max_workers(), |c| {
+                        policy.max_workers().min(c.max_workers())
+                    })
+                    .min(caller_workers);
+                let narrowed = narrowed_policy_with_workers(
+                    policy,
+                    effective_workers,
+                    effective_memory,
+                    effective_work,
+                );
                 Self {
-                    cancellation: CancellationToken::new(),
+                    cancellation: scope_cancellation.clone(),
                     deadline: deadline.clone(),
                     declared_work: effective_work,
                     certified_seed: super::test_placement::certifying(),
@@ -142,7 +172,7 @@ impl<'a> QueryRequestExecution<'a> {
                             LeaseRequest {
                                 policy: narrowed,
                                 deadline,
-                                cancellation: CancellationToken::new(),
+                                cancellation: scope_cancellation,
                             },
                             caller,
                         ),
@@ -245,14 +275,6 @@ fn min_option(a: Option<u64>, b: Option<u64>) -> Option<u64> {
         (Some(x), None) | (None, Some(x)) => Some(x),
         (None, None) => None,
     }
-}
-
-fn narrowed_policy(
-    policy: worth_foundational::ExecutionRequestPolicy,
-    memory: Option<u64>,
-    work: Option<u64>,
-) -> worth_foundational::ExecutionRequestPolicy {
-    narrowed_policy_with_workers(policy, policy.max_workers(), memory, work)
 }
 
 fn narrowed_policy_with_workers(

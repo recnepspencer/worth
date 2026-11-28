@@ -121,6 +121,10 @@ where
         let execution = caller_execution
             .copied()
             .unwrap_or_else(|| worth_execution::ExecutionRequest::serial(&fallback_serial));
+        if let Err(denial) = execution.consult() {
+            permit.proven_no_effect();
+            return Err(RuntimeWorldBranchRetirementDenial::Request(denial));
+        }
         let head = match WorldHeadInput::from_snapshot(&snapshot) {
             Ok(head) => head,
             Err(_) => {
@@ -136,6 +140,10 @@ where
             &execution,
         ) {
             Ok(subject) => subject,
+            Err(crate::durability::WorldDurableMediumDenial::Request(denial)) => {
+                permit.proven_no_effect();
+                return Err(RuntimeWorldBranchRetirementDenial::Request(denial));
+            }
             Err(_) => {
                 permit.proven_no_effect();
                 return Err(RuntimeWorldBranchRetirementDenial::CapacityExhausted);
@@ -145,7 +153,16 @@ where
             match binding.publish(&subject, &execution) {
                 Ok(_committed) => break,
                 Err(Stop::Pending) => std::thread::yield_now(),
-                Err(Stop::Refused(_) | Stop::Busy | Stop::BlockedByPriorBarrier { .. }) => {
+                Err(Stop::Refused(refusal)) => {
+                    permit.proven_no_effect();
+                    return Err(match refusal.into_cause() {
+                        crate::durability::WorldDurableMediumDenial::Request(denial) => {
+                            RuntimeWorldBranchRetirementDenial::Request(denial)
+                        }
+                        _ => RuntimeWorldBranchRetirementDenial::OwnerUnavailable,
+                    });
+                }
+                Err(Stop::Busy | Stop::BlockedByPriorBarrier { .. }) => {
                     permit.proven_no_effect();
                     return Err(RuntimeWorldBranchRetirementDenial::OwnerUnavailable);
                 }

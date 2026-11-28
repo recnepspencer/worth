@@ -95,6 +95,8 @@ pub(crate) struct HomeContext {
     pub(crate) location: std::path::PathBuf,
     pub(crate) descriptor: crate::descriptor::HomeDescriptor,
     pub(crate) serving: Arc<ServingPhysicalRuntime>,
+    pub(crate) historical_bases:
+        Mutex<Option<crate::historical_cursor::DurableHistoricalBasisStore>>,
 }
 
 impl HomeContext {
@@ -144,6 +146,76 @@ impl ReadmittedApplicationHome {
     /// Durable whole-Home frontier pins over this Home's physical Store.
     pub fn frontier_retention(&self) -> crate::home_retention::DurableHomeRetention {
         self.context.frontier_retention()
+    }
+
+    /// Returns a handle to this Home's ONE shared durable retained-basis
+    /// historical cursor store (shared catalog, publication fence, MAC key, and
+    /// residency pool across all handles of this Home).
+    pub fn historical_basis_store(
+        &self,
+        budget: worth_relational::facade::config::ResidencyBudget,
+    ) -> Result<
+        crate::historical_cursor::DurableHistoricalBasisStore,
+        worth_runtime_world::facade::HistoricalReadDenial,
+    > {
+        let mut slot = self
+            .context
+            .historical_bases
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(existing) = slot.as_ref() {
+            return Ok(existing.clone());
+        }
+        let store = crate::historical_cursor::DurableHistoricalBasisStore::open_or_restore(
+            Arc::clone(&self.context.serving),
+            self.context.descriptor.identity,
+            self.context.descriptor.incarnation,
+            budget,
+        )?;
+        *slot = Some(store.clone());
+        Ok(store)
+    }
+
+    /// Cold Home open helper: if a persisted historical basis catalog exists,
+    /// reconciles crash-cut pins and promotes unclaimed in-flight retain intents
+    /// into pending branch retirements without locking in a premature residency budget.
+    pub fn recover_persisted_historical_basis_catalog(
+        &self,
+    ) -> Result<Vec<String>, worth_runtime_world::facade::HistoricalReadDenial> {
+        let slot = self
+            .context
+            .historical_bases
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(existing) = slot.as_ref() {
+            return Ok(existing
+                .pending_retire_branches()
+                .into_iter()
+                .filter(|name| !existing.is_retained_branch(name))
+                .collect());
+        }
+        crate::historical_cursor::DurableHistoricalBasisStore::recover_persisted_branches_on_open(
+            &self.context.serving,
+        )
+    }
+
+    /// Clears a branch from durable retirement tracking ONLY after `close_branch` succeeds.
+    pub fn mark_persisted_historical_branch_retired(
+        &self,
+        branch_name: &str,
+    ) -> Result<(), worth_runtime_world::facade::HistoricalReadDenial> {
+        let slot = self
+            .context
+            .historical_bases
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        if let Some(existing) = slot.as_ref() {
+            return existing.mark_branch_retired(branch_name);
+        }
+        crate::historical_cursor::DurableHistoricalBasisStore::mark_persisted_branch_retired_on_open(
+            &self.context.serving,
+            branch_name,
+        )
     }
 
     /// Native component access for the next owner readmission. This is not an

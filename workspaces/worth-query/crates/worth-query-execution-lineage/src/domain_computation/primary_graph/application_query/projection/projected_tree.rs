@@ -171,6 +171,35 @@ impl WorthQueryApplicationProjectionNode {
                 usize::saturating_add,
             )
     }
+
+    /// Exact byte footprint of this node's disclosed fields and disclosed
+    /// nested relations (including heap string/bytes payloads).
+    pub fn disclosed_retained_bytes(
+        &self,
+        governance: &dyn crate::ports::QueryGovernancePort,
+    ) -> usize {
+        if governance.is_public() {
+            return self.retained_bytes().max(std::mem::size_of::<Self>());
+        }
+        let mut total = std::mem::size_of::<Self>();
+        for field in &self.fields {
+            if governance.is_disclosed(field.slot_key.as_ref()) {
+                total = total
+                    .saturating_add(std::mem::size_of::<WorthQueryApplicationProjectedField>())
+                    .saturating_add(field.retained_bytes());
+            }
+        }
+        for relation in &self.relations {
+            if governance.is_disclosed(relation.slot_key.as_ref()) {
+                total = total
+                    .saturating_add(std::mem::size_of::<WorthQueryApplicationProjectedRelation>());
+                for child in &relation.rows {
+                    total = total.saturating_add(child.disclosed_retained_bytes(governance));
+                }
+            }
+        }
+        total
+    }
 }
 
 impl WorthQueryApplicationProjectedRelation {

@@ -1,6 +1,7 @@
 mod claim_counts;
 pub(crate) mod component_obligation;
 pub(crate) mod frontier_pin;
+pub(crate) mod historical_cursor;
 mod obligation_transfer;
 mod observation_capacity;
 pub(crate) use observation_capacity::ReservedObservationCapacity;

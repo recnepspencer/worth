@@ -83,6 +83,8 @@ impl<Query, QueryResult> WorthQueryApplicationOneShotResult<Query, QueryResult> 
             self.result_set_observation,
             self.request_affinity,
             self.receipt,
+            self.window_progress,
+            self.row_projected_bytes,
         )
     }
 }

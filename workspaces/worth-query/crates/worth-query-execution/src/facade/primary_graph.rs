@@ -5,16 +5,22 @@ pub use crate::domain_computation::primary_graph::query_obligations::{
     QueryManagedRunPosture, QueryManagedRunRecovery, QueryManagedRunResources,
 };
 pub use crate::domain_computation::primary_graph::WorthQueryOriginalOperationDenial;
+mod controls;
 mod correction;
-pub use correction::*;
+mod inbound_completion;
+mod managed_cleanup;
 mod managed_index;
 mod mutation_handler;
+mod native_refusals;
+mod product;
+mod read_denials;
+mod resources;
+mod runtime_time;
 pub use crate::domain_computation::application_aftermath::{
     WorthQueryPreImageRetentionDenial, WorthQueryRelationPreImageDenial,
     WorthQueryRelationPreImageFailure,
 };
 pub use crate::domain_computation::primary_graph::application_attempt::WorthQuerySignedCreationPreparationDenial;
-mod resources;
 #[doc(hidden)]
 pub use crate::domain_computation::primary_graph::FragmentReadable;
 pub use crate::domain_computation::primary_graph::{
@@ -29,9 +35,6 @@ pub use crate::domain_computation::{
     WorthQueryProductUnpublishedRecoveryReleaseFailure, WorthQueryProviderSessionFailure,
     WorthQueryRecoveredProductReleaseDenial,
 };
-pub use managed_index::*;
-pub use mutation_handler::*;
-pub use resources::*;
 /// Read-only aggregate lineage vocabulary and original commit occurrence diagnostics.
 pub use worth_foundational::facade::AggregateLineageKind;
 /// Original Native commit occurrence; lineage diagnostics grant no authority.
@@ -40,11 +43,11 @@ pub use worth_relational::facade::history::{
     BranchId, CommitId, RelationalAuthoredWriteDenial, RelationalCommitReceipt,
 };
 pub use worth_relational::facade::identity::VersionId;
-
-mod controls;
-pub use controls::*;
-mod runtime_time;
-pub use runtime_time::*;
+pub use {
+    controls::*, correction::*, inbound_completion::*, managed_cleanup::*, managed_index::*,
+    mutation_handler::*, native_refusals::*, product::*, read_denials::*, resources::*,
+    runtime_time::*,
+};
 
 pub use worth_relational::facade::{
     indexes::{
@@ -67,7 +70,8 @@ pub use worth_relational::facade::{
 };
 
 pub use crate::domain_computation::primary_graph::{
-    ExecutionRequest, VerificationCapacityStop, WholeResultLiveStageForTest,
+    compute_admitted_request_binding_digest, compute_resume_anchor_proof, ExecutionRequest,
+    KnownProjectedHeapBytes, VerificationCapacityStop, WholeResultLiveStageForTest,
     WorthQueryAdmittedApplicationCapabilityAccess,
     WorthQueryAdmittedApplicationConditionalDefinition,
     WorthQueryAdmittedApplicationHistoryCapture, WorthQueryAdmittedApplicationOperation,
@@ -140,33 +144,33 @@ pub use crate::domain_computation::primary_graph::{
     WorthQueryApplicationReadObservation, WorthQueryApplicationRelationSeed,
     WorthQueryApplicationRequiredOutputConnection, WorthQueryApplicationRequiredOutputSource,
     WorthQueryApplicationRetainedCommitOutcome, WorthQueryApplicationRootWindow,
-    WorthQueryApplicationRootWindowBoundary, WorthQueryApplicationRootWindowProgress,
-    WorthQueryApplicationSourceAdjacencyEndpoints, WorthQueryApplicationStaleAttempt,
-    WorthQueryApplicationTypedClosureEvidence, WorthQueryApplicationTypedOutputCorrespondence,
-    WorthQueryApplicationUncommitted, WorthQueryApplicationUnobservedWrite,
-    WorthQueryApplicationUnresolvedCommitEvidence, WorthQueryApplicationWholeResultLiveLease,
-    WorthQueryApplicationWholeResultLiveOutcome, WorthQueryApplicationWholeResultLiveSnapshot,
-    WorthQueryApplicationWholeResultLiveUpdate, WorthQueryApprovedElevation,
-    WorthQueryAuthenticatedInboundOccurrence, WorthQueryAuthenticatedPrincipal,
-    WorthQueryBoundSourceExpectation, WorthQueryBranchAdoptionActivationDenial,
-    WorthQueryBranchAdoptionPreparationDenial, WorthQueryBranchAdoptionPublicationOutcome,
-    WorthQueryBranchAdoptionReadmissionDenial, WorthQueryBranchAdoptionRecovery,
-    WorthQueryBranchAdoptionRecoveryDenial, WorthQueryBranchAdoptionRecoveryFailure,
-    WorthQueryBranchAdoptionRecoveryOutcome, WorthQueryBranchAdoptionRecoveryReleaseFailure,
-    WorthQueryBranchSetAdoptionAdvanceDenial, WorthQueryBranchSetAdoptionCancellation,
-    WorthQueryBranchSetAdoptionCloseDenial, WorthQueryBranchSetAdoptionPreparationDenial,
-    WorthQueryBranchSetAdoptionProgress, WorthQueryBranchSetAdoptionRecovery,
-    WorthQueryBranchSetAdoptionRecoveryFailure, WorthQueryBranchSetAdoptionRecoveryOutcome,
-    WorthQueryBranchSetAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionResumeDenial,
-    WorthQueryBranchSetAdoptionResumeFailure, WorthQueryBridgeGranularDeliveryCounters,
-    WorthQueryCapabilityRevocationProgram, WorthQueryCapturedApplicationHistorySubjects,
-    WorthQueryClosedBranchSetAdoption, WorthQueryCommittedDispatchOutboxObservation,
-    WorthQueryCommittedDispatchOutboxReadDenial, WorthQueryCommittedDispatchOutboxReadWork,
-    WorthQueryCommittedProductPublication, WorthQueryCompleteApplicationReadSet,
-    WorthQueryCompletedGeneratedOutputReconstruction, WorthQueryCompletedInvariantProjection,
-    WorthQueryCompletedOperationInvariantProjection, WorthQueryCompletedOriginalReadOutputs,
-    WorthQueryCompletedReadOutputs, WorthQueryCompletedRequiredOutputs,
-    WorthQueryConditionalApplicationRuntimeInstallation,
+    WorthQueryApplicationRootWindowBoundary, WorthQueryApplicationRootWindowPage,
+    WorthQueryApplicationRootWindowProgress, WorthQueryApplicationSourceAdjacencyEndpoints,
+    WorthQueryApplicationStaleAttempt, WorthQueryApplicationTypedClosureEvidence,
+    WorthQueryApplicationTypedOutputCorrespondence, WorthQueryApplicationUncommitted,
+    WorthQueryApplicationUnobservedWrite, WorthQueryApplicationUnresolvedCommitEvidence,
+    WorthQueryApplicationWholeResultLiveLease, WorthQueryApplicationWholeResultLiveOutcome,
+    WorthQueryApplicationWholeResultLiveSnapshot, WorthQueryApplicationWholeResultLiveUpdate,
+    WorthQueryApprovedElevation, WorthQueryAuthenticatedInboundOccurrence,
+    WorthQueryAuthenticatedPrincipal, WorthQueryBoundSourceExpectation,
+    WorthQueryBranchAdoptionActivationDenial, WorthQueryBranchAdoptionPreparationDenial,
+    WorthQueryBranchAdoptionPublicationOutcome, WorthQueryBranchAdoptionReadmissionDenial,
+    WorthQueryBranchAdoptionRecovery, WorthQueryBranchAdoptionRecoveryDenial,
+    WorthQueryBranchAdoptionRecoveryFailure, WorthQueryBranchAdoptionRecoveryOutcome,
+    WorthQueryBranchAdoptionRecoveryReleaseFailure, WorthQueryBranchSetAdoptionAdvanceDenial,
+    WorthQueryBranchSetAdoptionCancellation, WorthQueryBranchSetAdoptionCloseDenial,
+    WorthQueryBranchSetAdoptionPreparationDenial, WorthQueryBranchSetAdoptionProgress,
+    WorthQueryBranchSetAdoptionRecovery, WorthQueryBranchSetAdoptionRecoveryFailure,
+    WorthQueryBranchSetAdoptionRecoveryOutcome, WorthQueryBranchSetAdoptionRecoveryReleaseFailure,
+    WorthQueryBranchSetAdoptionResumeDenial, WorthQueryBranchSetAdoptionResumeFailure,
+    WorthQueryBridgeGranularDeliveryCounters, WorthQueryCapabilityRevocationProgram,
+    WorthQueryCapturedApplicationHistorySubjects, WorthQueryClosedBranchSetAdoption,
+    WorthQueryCommittedDispatchOutboxObservation, WorthQueryCommittedDispatchOutboxReadDenial,
+    WorthQueryCommittedDispatchOutboxReadWork, WorthQueryCommittedProductPublication,
+    WorthQueryCompleteApplicationReadSet, WorthQueryCompletedGeneratedOutputReconstruction,
+    WorthQueryCompletedInvariantProjection, WorthQueryCompletedOperationInvariantProjection,
+    WorthQueryCompletedOriginalReadOutputs, WorthQueryCompletedReadOutputs,
+    WorthQueryCompletedRequiredOutputs, WorthQueryConditionalApplicationRuntimeInstallation,
     WorthQueryConditionalAuthoritativeDeliveryFailure, WorthQueryConditionalClockHandle,
     WorthQueryConditionalClockObservationDenial, WorthQueryConditionalClockObservationDenialKind,
     WorthQueryConditionalClockObservationFailure, WorthQueryConditionalClockObservationFailureKind,
@@ -349,15 +353,13 @@ pub use crate::domain_computation::{
     WorthQueryProviderSessionGrantControlForTest, WorthQueryProviderSessionReceiver,
 };
 
+pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
+pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
+/// The Signal owner's typed safe-point refusal, exposed for request-custody probes.
+pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialForTest;
 pub use worth_signal::facade::{
     signal_request_charges_on_this_thread_for_test, signal_request_refusals_on_this_thread_for_test,
 };
-
-/// The Signal owner's typed safe-point refusal, exposed for request-custody probes.
-pub use worth_signal::facade::SignalCheckpointDenial as SignalCheckpointDenialForTest;
-
-pub use crate::domain_computation::execution_runtime::product_world::installed_source_reads_on_this_thread_for_test;
-
 /// Passive execution, World and Signal observations grant no request or publication authority.
 pub use {
     crate::domain_computation::execution_observation::WorthQueryExecutionObservation,
@@ -365,20 +367,14 @@ pub use {
     worth_signal::facade::SignalRequestWorkObservation,
 };
 
-pub use crate::domain_computation::invalidation_equivalence_control::WorthQueryInvalidationEquivalenceForTest;
-
+pub use crate::domain_computation::primary_graph::{
+    WorthQueryManagedPhaseStorageForTest, WorthQueryOutputDiscoveryRecipe,
+};
 /// Native delivery causes carried by the Query host audience.
 pub use worth_runtime_bridge::facade::{
     BridgeConditionalDenialKind, BridgeCorrespondenceDeliveryStop,
     BridgeExecutionBasisFinalizationFailureKind,
 };
-mod managed_cleanup;
-pub use managed_cleanup::*;
-mod product;
-pub use crate::domain_computation::primary_graph::WorthQueryManagedPhaseStorageForTest;
-pub use product::*;
-mod read_denials;
-pub use read_denials::*;
 
 /// Original field refusals carried through primary-graph installation.
 pub use worth_foundational::facade::{ContractValidationDenial, PortableAspectReadmissionDenial};
@@ -386,14 +382,12 @@ pub use worth_relational::facade::transactions::{
     ConflictClass, RecordAspectPatchDenial, RecordAspectPatchTarget, TransactionCommitError,
 };
 
-mod native_refusals;
-pub use native_refusals::*;
-
-pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest, SynchronousOutputEdges};
+pub use crate::domain_computation::application_aftermath::dispatch_journal::{
+    QueryDispatchCustody, QueryDispatchRecordedObservation, QueryDispatchUnresolvedCause,
+};
+pub use crate::domain_computation::primary_graph::application_contribution::producer::synchronous_outputs::{
+    SynchronousCaptureRetentionCountsForTest, SynchronousCaptureRetentionForTest,
+    SynchronousOutputEdges,
+};
 pub use crate::domain_computation::primary_graph::application_contribution::synchronous_outputs::SynchronousDiscoveredOutputRoot;
-pub use crate::domain_computation::application_aftermath::dispatch_journal::{QueryDispatchCustody, QueryDispatchRecordedObservation, QueryDispatchUnresolvedCause};
-mod inbound_completion;
-pub use crate::domain_computation::primary_graph::WorthQueryOutputDiscoveryRecipe;
-pub use inbound_completion::*;
-
 pub use worth_relational::facade::transactions::InvariantViolationFields;

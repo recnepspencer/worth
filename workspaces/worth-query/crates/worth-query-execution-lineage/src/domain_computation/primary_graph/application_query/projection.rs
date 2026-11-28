@@ -14,10 +14,12 @@ use worth_relational::facade::identity::EntityId;
 
 pub mod denial;
 pub mod disclosed;
+pub mod footprint;
 pub mod required_field;
 pub use denial::{
     WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
 };
+pub use footprint::KnownProjectedHeapBytes;
 pub mod optional_aspect;
 pub mod persistent_name;
 pub mod prerequisite_selection;
@@ -295,6 +297,22 @@ pub trait WorthQueryApplicationProjection<Schema, Query>: Sized {
     fn project(
         row: &WorthQueryApplicationProjectionRow<'_, Schema, Query>,
     ) -> Result<Self, WorthQueryApplicationProjectionDenial>;
+
+    /// Dynamic heap bytes owned by this projected typed row beyond `size_of::<Self>()`.
+    ///
+    /// Derived projections automatically sum dynamic container footprints (`String`,
+    /// `Vec`, `Option`, `WorthQueryApplicationDisclosed`, etc.); hand-written
+    /// projections that allocate heap data should override this so bounded
+    /// streaming windows enforce `streaming_window_bytes` on the final typed row.
+    fn projected_heap_bytes(&self) -> usize {
+        0
+    }
+
+    /// Total byte footprint (`size_of::<Self>() + projected_heap_bytes()`) of
+    /// this projected typed row.
+    fn projected_row_bytes(&self) -> usize {
+        std::mem::size_of::<Self>().saturating_add(self.projected_heap_bytes())
+    }
 }
 
 fn projection_denial(

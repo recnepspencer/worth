@@ -38,6 +38,7 @@ use crate::basis::WorthQueryProductBranchAdmissionDenial;
 use crate::domain_computation::primary_graph::{
     WorthQueryAdvancementDenial, WorthQueryAdvancementPhase,
 };
+use crate::facade::request_execution::WorthQueryBootstrapAdvancementPhase;
 use crate::ports::HomeMaintenanceAfterAdvancement;
 
 pub trait ProductRuntimeInternalPort: Sized {
@@ -143,6 +144,21 @@ pub trait ProductRuntimeInternalPort: Sized {
     fn with_execution_request_advancement<R>(
         &self,
         caller: worth_execution::ExecutionRequest<'_, '_>,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial>;
+
+    fn with_scoped_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_foundational::ExecutionRequestPolicy,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial>;
+
+    fn with_bootstrap_handed_off_advancement<R>(
+        &self,
+        bootstrap: &WorthQueryBootstrapAdvancementPhase<'_>,
+        retain_returned_outcome: bool,
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial>;
 }
@@ -348,5 +364,24 @@ impl ProductRuntimeInternalPort for WorthQueryProductRuntime {
         body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
     ) -> Result<R, WorthQueryAdvancementDenial> {
         Self::with_execution_request_advancement(self, caller, body)
+    }
+
+    fn with_scoped_execution_request_advancement<R>(
+        &self,
+        caller: worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_foundational::ExecutionRequestPolicy,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        Self::with_scoped_execution_request_advancement(self, caller, policy, request, body)
+    }
+
+    fn with_bootstrap_handed_off_advancement<R>(
+        &self,
+        bootstrap: &WorthQueryBootstrapAdvancementPhase<'_>,
+        retain_returned_outcome: bool,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        Self::with_bootstrap_handed_off_advancement(self, bootstrap, retain_returned_outcome, body)
     }
 }

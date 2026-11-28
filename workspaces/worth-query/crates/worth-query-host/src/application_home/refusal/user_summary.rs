@@ -74,6 +74,16 @@ impl<Schema: ApplicationSchemaComposition, Program> WorthQueryUserFacingRefusal
             | Phase::QueryAttachment { .. }
             | Phase::CustodyReadmission { .. }
             | Phase::OwnerAdmission { .. } => STORAGE,
+            Phase::HistoricalBranchReconciliation { cause, .. } => match cause {
+                worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                    worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption::DeadlineExceeded,
+                ) => TIMED_OUT,
+                worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Interrupted(
+                    worth_query_execution::facade::application_contribution::WorthQueryManagedComputationInterruption::Cancelled,
+                ) => Summary::of(Category::Interrupted),
+                worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial::Resource(_) => CAPACITY,
+                _ => INTERNAL,
+            },
         }
     }
 }

@@ -40,10 +40,10 @@ impl<Schema: ApplicationSchema> WorthQueryProductEntry<'_, Schema> {
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
     ) -> Result<WorthQueryProductBranchCloseReceipt, WorthQueryApplicationProductBranchCloseDenial>
     {
-        let mut retirements = OwnerCleanupRetirements::default();
         let execution = phase
             .execution_request_for(self.application.inner.runtime.product_runtime_ref())
             .map_err(|_| WorthQueryApplicationProductBranchCloseDenial::ForeignPhase)?;
+        let mut retirements = OwnerCleanupRetirements::default();
         let occurrence = self.branch.occurrence();
         let pending_correction = self
             .application

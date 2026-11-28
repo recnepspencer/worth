@@ -9,6 +9,7 @@ mod deadline;
 mod descriptor;
 mod discard;
 mod frame_encoding;
+mod historical_cursor;
 mod home_context;
 #[cfg(feature = "certification-test-authority")]
 mod home_controls_for_test;

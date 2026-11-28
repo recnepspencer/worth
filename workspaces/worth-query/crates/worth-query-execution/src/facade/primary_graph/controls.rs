@@ -2,8 +2,7 @@
 pub use crate::domain_computation::primary_graph::{
     advancement_observations_on_this_thread_for_test, advancement_requests_on_this_thread_for_test,
     bound_advancement_requests_on_this_thread_for_test,
-    caller_pass_reports_on_this_thread_for_test,
-    conditional_intent_read_is_active_for_test,
+    caller_pass_reports_on_this_thread_for_test, conditional_intent_read_is_active_for_test,
     fact_verification_on_this_thread_for_test,
     full_partitioned_computation_preparations_on_this_thread_for_test,
     inexact_native_deliveries_on_this_thread_for_test, native_marking_on_this_thread_for_test,

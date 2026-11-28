@@ -17,6 +17,7 @@ use std::num::NonZeroUsize;
 use worth_query_declaration::facade::application_schema::ApplicationSchema;
 use worth_query_execution::facade::primary_graph::{
     WorthQueryApplicationRootWindow, WorthQueryApplicationRootWindowBoundary,
+    WorthQueryApplicationRootWindowPage,
 };
 use worth_query_publication::facade::application_entry::{
     WorthQueryApplicationReadObservation, WorthQueryApplicationRequestQueryDenial,
@@ -104,6 +105,39 @@ impl<Schema: ApplicationSchema, Program> WorthQueryHostSession<'_, Schema, Progr
     ) -> Result<WorthQueryPage<Intent::Row, Intent>, WorthQueryApplicationRequestQueryDenial> {
         read_page(self, None, intent, width, after)
     }
+
+    pub(crate) fn query_window_at<Intent: WorthQuerySessionQuery<Schema>>(
+        &self,
+        execution: &worth_execution::ExecutionRequest<'_, '_>,
+        observation: &WorthQueryApplicationReadObservation,
+        intent: Intent,
+        window: WorthQueryApplicationRootWindow,
+    ) -> Result<WorthQueryApplicationRootWindowPage<Intent::Row>, QueryWindowAtError> {
+        let published = match intent.execute_window_in_session_with_execution(
+            self,
+            execution,
+            Some(observation),
+            window.clone(),
+        ) {
+            Ok(published) => published,
+            Err(denial) => {
+                if let Some(requested_bytes) = window.take_oversized_row_bytes() {
+                    return Err(QueryWindowAtError::OversizedRow { requested_bytes });
+                }
+                return Err(QueryWindowAtError::Denial(denial));
+            }
+        };
+        published
+            .into_root_window_page()
+            .ok_or(QueryWindowAtError::Denial(
+                WorthQueryApplicationRequestQueryDenial::RequestMode,
+            ))
+    }
+}
+
+pub(crate) enum QueryWindowAtError {
+    OversizedRow { requested_bytes: usize },
+    Denial(WorthQueryApplicationRequestQueryDenial),
 }
 
 /// One window read through `session`, at `at` when a snapshot pins it.

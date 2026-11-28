@@ -54,7 +54,23 @@ worth_query_application_program! {
             query(ReadTaskDetailsBinding) { definition: ReadTaskDetailsQuery::definition(); };
             query(ReadProjectTasksBinding) { definition: ReadProjectTasksQuery::definition(); };
             query(BacklogTasksBinding) { definition: BacklogTasksQuery::definition(); };
+            query(super::retained_basis_cursor_window_budget_court::ExpandingTasksBinding) {
+                definition: super::retained_basis_cursor_window_budget_court::ExpandingTasksQuery::definition();
+            };
+            query(super::retained_basis_cursor_controls_court::UnorderedTasksBinding) {
+                definition: super::retained_basis_cursor_controls_court::UnorderedTasksQuery::definition();
+            };
+            query(super::retained_basis_cursor_nested_budget_schema::InternedTagBinding) {
+                definition: super::retained_basis_cursor_nested_budget_schema::InternedTagQuery::definition();
+            };
+            query(super::retained_basis_cursor_nested_budget_schema::ProjectTasksOutlineBinding) {
+                definition: super::retained_basis_cursor_nested_budget_schema::ProjectTasksOutlineQuery::definition();
+            };
+            query(super::retained_basis_cursor_nested_budget_schema::PredicatedOutlineBinding) {
+                definition: super::retained_basis_cursor_nested_budget_schema::PredicatedOutlineQuery::definition();
+            };
             query(TasksByPriorityBinding) { definition: TasksByPriorityQuery::definition(); };
+            query(TasksByTitleBinding) { definition: TasksByTitleQuery::definition(); };
             body_action(RescheduleTaskBinding, RescheduleTaskDelivery) as RescheduleTaskAction {
                 operation: reschedule_task_definition();
             };
@@ -145,8 +161,8 @@ pub(super) fn owner_identity() -> WorthQueryExternalPrincipalIdentity {
     WorthQueryExternalPrincipalIdentity::new(DaymarkIssuer, "owner").unwrap()
 }
 
-pub fn owner(
-    home: &DaymarkHome,
+pub fn owner<Program>(
+    home: &WorthQueryApplicationHome<DaymarkSchema, Program>,
     clock: &WorthQueryAdmissionClock,
 ) -> WorthQueryAuthenticatedExternalPrincipal<DaymarkSchema> {
     let scope = WorthQueryRequestScope::new(

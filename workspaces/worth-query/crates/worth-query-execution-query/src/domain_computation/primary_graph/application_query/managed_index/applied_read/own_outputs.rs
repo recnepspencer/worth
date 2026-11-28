@@ -7,9 +7,7 @@
 //! a chain record does. A probe that names no chain record is independent.
 use super::Denial;
 use crate::domain_computation::primary_graph::{
-    application_attempt::{
-        fact::touch_key, WorthQueryApplicationObservedFact as Fact,
-    },
+    application_attempt::{fact::touch_key, WorthQueryApplicationObservedFact as Fact},
     invariant_projection::read_basis::OwnOutputOverlay,
     source_facts::SourceFactsAllocation,
 };

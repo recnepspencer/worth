@@ -47,17 +47,22 @@ impl<'home, Schema: ApplicationSchema, Program> WorthQueryHostSession<'home, Sch
         WorthQuerySessionSnapshot<'_, 'home, Schema, Program>,
         WorthQuerySessionSnapshotDenial,
     > {
-        let scope = self.fresh_scope();
-        let principal = self.call_principal();
-        let request = self.request_as(&principal, &scope);
-        let observation = self
-            .with_funded_advancement(&scope, |phase| request.retain_read(&phase))
-            .map_err(WorthQueryApplicationReadObservationDenial::ExecutionRequest)?
-            .map_err(WorthQueryApplicationReadObservationDenial::ProductSelection)?;
+        let observation = self.retain_read_observation()?;
         Ok(WorthQuerySessionSnapshot {
             session: self,
             observation,
         })
+    }
+
+    pub(crate) fn retain_read_observation(
+        &self,
+    ) -> Result<WorthQueryApplicationReadObservation, WorthQuerySessionSnapshotDenial> {
+        let scope = self.fresh_scope();
+        let principal = self.call_principal();
+        let request = self.request_as(&principal, &scope);
+        self.with_funded_advancement(&scope, |phase| request.retain_read(&phase))
+            .map_err(WorthQueryApplicationReadObservationDenial::ExecutionRequest)?
+            .map_err(WorthQueryApplicationReadObservationDenial::ProductSelection)
     }
 }
 

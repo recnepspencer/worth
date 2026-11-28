@@ -1,9 +1,7 @@
 //! Query and managed-index declarations for the Daymark acceptance court.
 use worth_query_decl::facade::application_identity::ApplicationIdentityNamespace;
 use worth_query_decl::facade::application_schema::*;
-use worth_query_decl::facade::{
-    worth_query_identity_namespace, WorthManagedIndex, WorthQuery,
-};
+use worth_query_decl::facade::{worth_query_identity_namespace, WorthManagedIndex, WorthQuery};
 
 use super::schema::*;
 
@@ -23,6 +21,8 @@ pub const PROJECT_TASKS_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.project-tasks.v1");
 pub const BY_PRIORITY_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.tasks-by-priority.v1");
+pub const BY_TITLE_NS: ApplicationIdentityNamespace =
+    worth_query_identity_namespace!("daymark.unified.tasks-by-title.v1");
 pub const BACKLOG_NS: ApplicationIdentityNamespace =
     worth_query_identity_namespace!("daymark.unified.backlog-tasks.v1");
 
@@ -211,6 +211,24 @@ pub struct BacklogTasks {
     limits = 8,
 )]
 pub struct TasksByPriority {
+    #[worth_query(scope)]
+    pub project: u64,
+}
+/// A project's tasks ordered by text `Title`, exercising text-boundary
+/// encoding limits and keyset pagination on string ordering keys.
+#[derive(Clone, Debug, WorthQuery)]
+#[worth_query(
+    schema = DaymarkSchema,
+    context = DaymarkContext,
+    namespace = BY_TITLE_NS,
+    result = TaskRow,
+    root = Task,
+    scope = ProjectKey,
+    root_path(Contains),
+    order_by(TaskRow::title(), Ascending),
+    limits = 8,
+)]
+pub struct TasksByTitle {
     #[worth_query(scope)]
     pub project: u64,
 }

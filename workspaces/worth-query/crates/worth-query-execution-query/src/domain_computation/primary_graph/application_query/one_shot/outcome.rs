@@ -275,7 +275,12 @@ where
         .map_err(|cause| value_decode_denial(cause, plan.query.name()))?;
     admit_request(request, plan.query.name())?;
     validate_authentication_lifetime(application, plan.principal, plan.query.name())?;
-    let (rows, kernel_receipt) = projected?.into_parts();
+    let (rows, mut kernel_receipt) = projected?.into_parts();
+    if rows.len() < observed_sources.len() {
+        observed_sources.truncate(rows.len());
+    }
+    let window_progress = kernel_receipt.read.window_progress.take();
+    let row_projected_bytes = std::mem::take(&mut kernel_receipt.read.row_projected_bytes);
     let (read_completion, source_context) = completed::complete_query(
         plan.graph_work,
         read_proof,
@@ -313,6 +318,8 @@ where
             result_set_observation,
             request_affinity,
             receipt,
+            window_progress,
+            row_projected_bytes,
         },
         capture,
         material_source: allocation,

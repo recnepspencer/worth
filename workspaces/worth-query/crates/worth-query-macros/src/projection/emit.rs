@@ -45,15 +45,8 @@ pub(super) fn projection(input: &DeriveInput, projection: &ProjectionDeclaration
         quote! {
             impl #decl::application_schema::ApplicationStructuredValueBinding for #row {
                 type Value = Self;
-                const IDENTITY_NAME: &'static str =
-                    #decl::worth_query_identity!(#namespace, result);
-
-                fn validate(
-                    _: &Self::Value,
-                ) -> ::core::result::Result<
-                    (),
-                    #decl::application_schema::ApplicationValueValidationDenial,
-                > {
+                const IDENTITY_NAME: &'static str = #decl::worth_query_identity!(#namespace, result);
+                fn validate(_: &Self::Value) -> ::core::result::Result<(), #decl::application_schema::ApplicationValueValidationDenial> {
                     ::core::result::Result::Ok(())
                 }
             }
@@ -342,9 +335,10 @@ fn project_row(
 
 fn name_read(optional: bool, group: bool) -> syn::Ident {
     let read = if group { "group_name" } else { "name" };
-    match optional {
-        true => format_ident!("optional_{read}"),
-        false => format_ident!("{read}"),
+    if optional {
+        format_ident!("optional_{read}")
+    } else {
+        format_ident!("{read}")
     }
 }
 
@@ -357,39 +351,41 @@ fn projects_names(input: &DeriveInput, projection: &ProjectionDeclaration) -> To
     });
     let nested_groups = nested.clone();
     quote! {
-        /// Whether this projection, or a related row it nests, projects a
-        /// persistent name.
-        #vis const PROJECTS_PERSISTENT_NAMES: bool =
-            #own #(|| <#nested>::PROJECTS_PERSISTENT_NAMES)*;
-        /// Whether this projection, or a related row it nests, projects a
-        /// group name.
-        #vis const PROJECTS_GROUP_NAMES: bool =
-            #own_groups #(|| <#nested_groups>::PROJECTS_GROUP_NAMES)*;
+        /// Whether this projection, or a related row it nests, projects a persistent name.
+        #vis const PROJECTS_PERSISTENT_NAMES: bool = #own #(|| <#nested>::PROJECTS_PERSISTENT_NAMES)*;
+        /// Whether this projection, or a related row it nests, projects a group name.
+        #vis const PROJECTS_GROUP_NAMES: bool = #own_groups #(|| <#nested_groups>::PROJECTS_GROUP_NAMES)*;
     }
 }
 
 fn project(
     input: &DeriveInput,
-    _projection: &ProjectionDeclaration,
+    projection: &ProjectionDeclaration,
     names: &ProjectionHygiene,
 ) -> TokenStream {
     let (graph, row) = (host(), &input.ident);
     let (schema_alias, q_ty, row_local) = (&names.schema_alias, &names.q_ty, &names.row_local);
     let bounds = query_bounds(names);
+    let members = projection
+        .slots
+        .iter()
+        .map(|s| &s.member)
+        .chain(projection.names.iter().map(|n| &n.member));
     quote! {
+        impl #graph::primary_graph::KnownProjectedHeapBytes for #row {
+            fn known_heap_bytes(&self) -> usize {
+                0usize #(.saturating_add(#graph::primary_graph::KnownProjectedHeapBytes::known_heap_bytes(&self.#members)))*
+            }
+        }
         impl<#q_ty> #graph::primary_graph::WorthQueryApplicationProjection<#schema_alias, #q_ty> for #row
-        where
-            #bounds
-        {
+        where #bounds {
             const PROJECTS_PERSISTENT_NAMES: bool = <#row>::PROJECTS_PERSISTENT_NAMES;
             const PROJECTS_GROUP_NAMES: bool = <#row>::PROJECTS_GROUP_NAMES;
-            fn project(
-                #row_local: &#graph::primary_graph::WorthQueryApplicationProjectionRow<'_, #schema_alias, #q_ty>,
-            ) -> ::core::result::Result<
-                Self,
-                #graph::primary_graph::WorthQueryApplicationProjectionDenial,
-            > {
+            fn project(#row_local: &#graph::primary_graph::WorthQueryApplicationProjectionRow<'_, #schema_alias, #q_ty>) -> ::core::result::Result<Self, #graph::primary_graph::WorthQueryApplicationProjectionDenial> {
                 Self::project_row(#row_local)
+            }
+            fn projected_heap_bytes(&self) -> usize {
+                <#row as #graph::primary_graph::KnownProjectedHeapBytes>::known_heap_bytes(self)
             }
         }
     }

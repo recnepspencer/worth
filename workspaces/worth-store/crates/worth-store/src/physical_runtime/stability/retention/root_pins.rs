@@ -280,4 +280,9 @@ impl RootPinTable {
     pub(in crate::physical_runtime) fn live_pins(&self) -> usize {
         self.lock().core.live_pins()
     }
+
+    pub(in crate::physical_runtime) fn live_pin_ids(&self) -> Vec<RootPinId> {
+        self.with_restored(|core| Ok(core.live_pin_ids()))
+            .unwrap_or_default()
+    }
 }

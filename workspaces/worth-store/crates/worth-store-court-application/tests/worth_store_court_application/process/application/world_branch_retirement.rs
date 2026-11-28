@@ -17,7 +17,15 @@ pub(super) fn create_branch(
     native_fork: bool,
     signal_fork: bool,
 ) -> ProductBranchObservation {
-    create_branch_with_fork_prefix(fixture, execution, source, name, name, native_fork, signal_fork)
+    create_branch_with_fork_prefix(
+        fixture,
+        execution,
+        source,
+        name,
+        name,
+        native_fork,
+        signal_fork,
+    )
 }
 
 pub(super) fn create_branch_with_fork_prefix(
@@ -179,9 +187,15 @@ fn durable_branch_creation_native_and_signal_forks_survive_graceful_reopen() {
             .branch_id(),
         &both_native_id
     );
-    assert_eq!(reopened_both.basis().signal_basis().branch_id(), both_signal_id);
+    assert_eq!(
+        reopened_both.basis().signal_basis().branch_id(),
+        both_signal_id
+    );
     assert_eq!(reopened_both.reference_generation().get(), 1);
-    assert_eq!(reopened_both.selected_commit().ordinal(), both_commit_ordinal);
+    assert_eq!(
+        reopened_both.selected_commit().ordinal(),
+        both_commit_ordinal
+    );
     drop(installed);
     super::world_occurrence_readmission::close(reopened.home, &execution);
 }
@@ -200,6 +214,29 @@ fn durable_branch_retirement_survives_graceful_reopen_with_history_readable() {
     let sibling_moved = publish_round(&fixture, &execution, sibling, 1);
     let retired_branch_id = sibling_moved.branch_identity().clone();
     let retired_commit_ordinal = sibling_moved.selected_commit().ordinal();
+
+    // A request that cannot fund the durable `BranchRetired` artifact must
+    // surface a typed request denial (not `CapacityExhausted`) and prove no effect.
+    let tiny_req = worth_execution::SerialRequest::from_memory(
+        worth_execution::SerialMemoryBudget::new(Some(1)),
+        worth_execution::CancellationToken::new(),
+        None,
+    );
+    let tiny_exec = ExecutionRequest::serial(&tiny_req);
+    assert!(matches!(
+        fixture
+            .home
+            .world()
+            .branch_port()
+            .retire_product_branch_with_request(&sibling_moved, &tiny_exec),
+        Err(RuntimeWorldServiceDenial::Denied(
+            RuntimeWorldBranchRetirementDenial::Request(
+                worth_execution::WorkCeilingDenial::Admission(
+                    worth_execution::LeaseDenial::MemoryExhausted(_),
+                ),
+            ),
+        ))
+    ));
 
     let report = fixture
         .home
@@ -285,9 +322,18 @@ fn durable_branch_retirement_survives_graceful_reopen_with_history_readable() {
         .branch_port()
         .retire_product_branch(&recreated)
         .unwrap();
-    assert_eq!(recreated_report.released_product_reference(), &retired_branch_id);
+    assert_eq!(
+        recreated_report.released_product_reference(),
+        &retired_branch_id
+    );
 
-    drop((sibling_moved, root_after, recreated, report, recreated_report));
+    drop((
+        sibling_moved,
+        root_after,
+        recreated,
+        report,
+        recreated_report,
+    ));
     super::world_occurrence_readmission::close(fixture.home, &execution);
 
     let reopened = open_home(directory.path(), &execution);
@@ -322,7 +368,10 @@ fn durable_branch_retirement_survives_graceful_reopen_with_history_readable() {
         .observation_port()
         .readmitted_publication(&retired_durable_commit)
         .unwrap();
-    assert_eq!(readmitted.after().selected_commit().ordinal(), retired_commit_ordinal);
+    assert_eq!(
+        readmitted.after().selected_commit().ordinal(),
+        retired_commit_ordinal
+    );
     let activation_history = reopened
         .home
         .world()

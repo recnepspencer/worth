@@ -215,6 +215,19 @@ fn serial_available_bytes(caller: worth_execution::ExecutionRequest<'_, '_>) -> 
         .0
 }
 
+fn open_serial<'a>(
+    policy: worth_foundational::ExecutionRequestPolicy,
+    caller: worth_execution::ExecutionRequest<'a, 'a>,
+) -> QueryRequestExecution<'a> {
+    QueryRequestExecution::open_serial_request(
+        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(policy),
+        caller,
+        None,
+        worth_execution::CancellationToken::new(),
+        None,
+    )
+}
+
 #[test]
 fn serial_reserve_and_resize_succeed_inside_narrowed_advancement_without_nested_lease_misuse() {
     let caller_policy = serial_policy(Some(16 * 1024));
@@ -226,10 +239,7 @@ fn serial_reserve_and_resize_succeed_inside_narrowed_advancement_without_nested_
     );
     let caller = worth_execution::ExecutionRequest::serial(&serial);
     let baseline = serial_available_bytes(caller);
-    let exec = QueryRequestExecution::open_serial_request(
-        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
-        caller,
-    );
+    let exec = open_serial(installed_policy, caller);
 
     let retained = exec
         .run_advancement(None, None, |_phase| {
@@ -273,10 +283,7 @@ fn preexisting_serial_caller_hold_narrows_inner_lease_and_rejects_over_budget_al
         .expect("bounded serial returns reservation");
     assert_eq!(baseline - serial_available_bytes(caller), 12 * 1024);
 
-    let exec = QueryRequestExecution::open_serial_request(
-        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
-        caller,
-    );
+    let exec = open_serial(installed_policy, caller);
     exec.run_advancement(None, None, |phase| {
         // Only ~4 KiB remains on the caller's serial budget: both ordinary
         // inner-lease allocations and retained reserves of 6 KiB must fail
@@ -322,14 +329,8 @@ fn two_advancements_sharing_cloned_serial_budget_and_overlapping_raw_holds_never
     let caller_a = worth_execution::ExecutionRequest::serial(&req_a);
     let caller_b = worth_execution::ExecutionRequest::serial(&req_b);
     let installed_policy = serial_policy(Some(32 * 1024));
-    let exec_a = QueryRequestExecution::open_serial_request(
-        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
-        caller_a,
-    );
-    let exec_b = QueryRequestExecution::open_serial_request(
-        worth_runtime_world::facade::RuntimeWorldExecutionPlacement::Serial(installed_policy),
-        caller_b,
-    );
+    let exec_a = open_serial(installed_policy, caller_a);
+    let exec_b = open_serial(installed_policy, caller_b);
 
     exec_a
         .run_advancement(None, None, |phase_a| {

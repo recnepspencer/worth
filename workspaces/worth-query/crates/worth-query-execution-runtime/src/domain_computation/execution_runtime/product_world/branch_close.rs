@@ -11,6 +11,7 @@ use crate::basis::{WorthQueryProductBranch, WorthQueryProductBranchAdmissionDeni
 #[derive(Debug)]
 pub enum WorthQueryProductBranchCloseDenial {
     Selection(WorthQueryProductBranchAdmissionDenial),
+    Request(crate::domain_computation::primary_graph::WorthQueryAdvancementDenial),
     OwnerUnavailable,
     AlreadyClosed,
     CapacityExhausted,
@@ -159,6 +160,11 @@ fn map_retirement_denial(
         RuntimeWorldServiceDenial::Denied(
             RuntimeWorldBranchRetirementDenial::CapacityExhausted,
         ) => WorthQueryProductBranchCloseDenial::CapacityExhausted,
+        RuntimeWorldServiceDenial::Denied(RuntimeWorldBranchRetirementDenial::Request(denial)) => {
+            WorthQueryProductBranchCloseDenial::Request(
+                crate::domain_computation::primary_graph::application_contribution::request_execution::advancement::advancement_denial(denial),
+            )
+        }
     }
 }
 

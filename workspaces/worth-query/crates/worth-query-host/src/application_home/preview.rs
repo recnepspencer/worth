@@ -163,6 +163,7 @@ pub(super) fn continue_expected_recovery<'home, Schema: ApplicationSchema, Progr
 pub(super) fn fork_expected_from_active_with_scope<'home, Schema: ApplicationSchema, Program>(
     home: &'home WorthQueryApplicationHome<Schema, Program>,
     scope: &WorthQueryRequestScope,
+    reserved_ordinal: Option<u64>,
 ) -> Result<WorthQueryExpectedProductBranch<'home, Schema>, WorthQueryPreviewForkDenial> {
     let active = home.active_branch();
     let graph = home.primary_graph();
@@ -175,10 +176,13 @@ pub(super) fn fork_expected_from_active_with_scope<'home, Schema: ApplicationSch
                     .on_branch(active)
                     .select(&phase)
                     .map_err(WorthQueryPreviewForkDenial::Selection)?;
-                let fork = graph
+                let mut fork = graph
                     .branches()
                     .fork_expected(selected)
                     .map_err(WorthQueryPreviewForkDenial::Selection)?;
+                if let Some(ordinal) = reserved_ordinal {
+                    fork = fork.with_reserved_ordinal(ordinal);
+                }
                 fork.components(|parts| parts.fork_relational().reuse_exact_signal_basis())
                     .create(&phase)
                     .map_err(WorthQueryPreviewForkDenial::Create)
@@ -214,7 +218,18 @@ impl<Schema: ApplicationSchema, Program> WorthQueryApplicationHome<Schema, Progr
         scope: &WorthQueryRequestScope,
     ) -> Result<WorthQueryPreviewFork<'_, Schema>, WorthQueryPreviewForkDenial> {
         let label = label.into();
-        let expected = fork_expected_from_active_with_scope(self, scope)?;
+        let expected = fork_expected_from_active_with_scope(self, scope, None)?;
+        Ok(WorthQueryPreviewFork { label, expected })
+    }
+
+    pub(super) fn fork_preview_with_reserved_ordinal(
+        &self,
+        label: impl Into<String>,
+        ordinal: u64,
+    ) -> Result<WorthQueryPreviewFork<'_, Schema>, WorthQueryPreviewForkDenial> {
+        let scope = fresh_preview_scope();
+        let label = label.into();
+        let expected = fork_expected_from_active_with_scope(self, &scope, Some(ordinal))?;
         Ok(WorthQueryPreviewFork { label, expected })
     }
 

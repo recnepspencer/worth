@@ -23,6 +23,14 @@ impl WorthQueryProductBranchInventory {
             .iter()
             .map(|branch| WorthQueryProductBranch::from_occurrence(branch.lifecycle_incarnation()))
     }
+
+    pub fn find_by_name(&self, name: &str) -> Option<WorthQueryProductBranch> {
+        self.observed
+            .branches()
+            .iter()
+            .find(|branch| branch.branch_identity().name().as_str() == name)
+            .map(|branch| WorthQueryProductBranch::from_occurrence(branch.lifecycle_incarnation()))
+    }
 }
 #[derive(Debug)]
 pub enum WorthQueryProductBranchInventoryDenial {

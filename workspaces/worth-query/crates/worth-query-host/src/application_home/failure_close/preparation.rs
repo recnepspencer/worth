@@ -45,6 +45,10 @@ pub(super) enum WorldQueryPreparation<Schema: ApplicationSchemaComposition, Prog
         _query: super::super::UnadmittedHomeQueryService<Schema, Program>,
         _cause: ApplicationHomeOwnerAdmissionDenial,
     },
+    HistoricalBranchReconciliation {
+        _query: worth_query_execution::facade::application_installation::WorthQueryProgramApplicationRuntime<Schema, Program>,
+        _cause: worth_query_execution::facade::application_contribution::WorthQueryAdvancementDenial,
+    },
 }
 pub(super) enum BootstrapFailure {
     InitialState(QueryHomeInitialStateDenial),
@@ -79,6 +83,7 @@ impl<Schema: ApplicationSchemaComposition, Program> WorldQueryPreparation<Schema
             Self::Attachment(query) => query.detail(),
             Self::Custody { _cause, .. } => format!("{_cause:?}"),
             Self::OwnerAdmission { _cause, .. } => format!("{_cause:?}"),
+            Self::HistoricalBranchReconciliation { _cause, .. } => format!("{_cause:?}"),
         }
     }
 }

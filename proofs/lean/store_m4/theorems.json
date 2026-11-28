@@ -5,7 +5,8 @@
     "StoreM4.GCPinSafety",
     "StoreM4.ChunkedCoverage",
     "StoreM4.ExtentGenerationSafety",
-    "StoreM4.ReclamationSafety"
+    "StoreM4.ReclamationSafety",
+    "StoreM4.RetainedBasisCursor"
   ],
   "allowed_axioms": [],
   "theorems": [
@@ -140,6 +141,50 @@
     {
       "name": "StoreM4.ReclamationSafety.M9_readmitting_published_range_double_frees",
       "type": "∃ s, StoreM4.ReclamationSafety.Reachable StoreM4.ReclamationSafety.resumeReadmits s ∧ s.freeCount = 2"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.consolidation_preserves_commitment",
+      "type": "∀ {α : Type} (hash : List StoreM4.RetainedBasisCursor.Row → α) (chunks : List StoreM4.RetainedBasisCursor.LayeredChunk) (newLocator : StoreM4.RetainedBasisCursor.LayeredChunk → Nat), hash (StoreM4.RetainedBasisCursor.basisCanonicalRows (StoreM4.RetainedBasisCursor.consolidateBasis chunks newLocator)) = hash (StoreM4.RetainedBasisCursor.basisCanonicalRows chunks)"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.canonical_resume_exact_after_index_discard",
+      "type": "∀ (chunks : List (List StoreM4.RetainedBasisCursor.Row)) (pos : Option Nat), StoreM4.RetainedBasisCursor.StrictlySorted chunks.flatten → StoreM4.RetainedBasisCursor.resumeWithChunkIndex chunks pos = StoreM4.RetainedBasisCursor.canonicalSuffix chunks.flatten pos ∧ StoreM4.RetainedBasisCursor.canonicalPrefix chunks.flatten pos ++ StoreM4.RetainedBasisCursor.canonicalSuffix chunks.flatten pos = chunks.flatten"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.reconcileOnOpen_pin_ownership_exact",
+      "type": "∀ (s : StoreM4.RetainedBasisCursor.Sys), let s' := StoreM4.RetainedBasisCursor.reconcileOnOpen s; s'.pendingRetirePins = [] ∧ (∀ p ∈ s'.durablePins, p.active = true → p.pinId ∈ StoreM4.RetainedBasisCursor.boundPinIds s'.bases) ∧ ∀ b ∈ s'.bases, 0 < b.pinId ∧ b.prevPinId = none ∧ b.stagedConsolidate = false ∧ b.activeLoans = 0"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.forged_or_cross_home_token_rejected",
+      "type": "∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token), (tok.verifyMac s.macKey = false ∨ tok.homeId ≠ s.homeId) → StoreM4.RetainedBasisCursor.resumeToken s tok = StoreM4.RetainedBasisCursor.ResumeOutcome.corruptStorage"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.resume_vs_prune_exclusive",
+      "type": "∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token) (b : StoreM4.RetainedBasisCursor.BasisEntry), StoreM4.RetainedBasisCursor.Inv s → b ∈ s.bases → tok.verifyMac s.macKey = true → tok.homeId = s.homeId → tok.incarnation ≤ s.incarnation → tok.schemaVer = s.supportedSchema → tok.queryDigest = s.expectedQuery → b.commitId = tok.commitId → b.branchOrigin = tok.branchOrigin → b.commitment = tok.commitment → b.retained = true → (∃ s', StoreM4.RetainedBasisCursor.resumeToken s tok = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted s' b.commitId (StoreM4.RetainedBasisCursor.canonicalSuffix b.rows tok.afterKey) ∧ ∀ b' ∈ (StoreM4.RetainedBasisCursor.reclaimBasis (StoreM4.RetainedBasisCursor.pruneBasis s' b.commitId) b.commitId).bases, b'.commitId = b.commitId → b'.reclaimed = false ∧ 0 < b'.activeLoans) ∧ StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.pruneBasis s b.commitId) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.historyUnavailable"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.restart_resumes_iff_independently_retained",
+      "type": "∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token) (b : StoreM4.RetainedBasisCursor.BasisEntry), StoreM4.RetainedBasisCursor.Inv s → b ∈ s.bases → tok.verifyMac s.macKey = true → tok.homeId = s.homeId → tok.incarnation ≤ s.incarnation → tok.schemaVer = s.supportedSchema → tok.queryDigest = s.expectedQuery → b.commitId = tok.commitId → b.branchOrigin = tok.branchOrigin → b.commitment = tok.commitment → (b.retained = true → ∃ s', StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.reconcileOnOpen s) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted s' b.commitId (StoreM4.RetainedBasisCursor.canonicalSuffix b.rows tok.afterKey)) ∧ (b.retained = false → StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.reconcileOnOpen s) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.historyUnavailable)"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.RetainedBasisCursorImmutable",
+      "type": "(∀ {init s : StoreM4.RetainedBasisCursor.Sys}, StoreM4.RetainedBasisCursor.Reachable init s → (∀ b ∈ s.bases, 0 < b.activeLoans → b.reclaimed = false) ∧ (∀ b ∈ s.bases, b.retained = true → b.reclaimed = false) ∧ (∀ b ∈ s.bases, b.retained = true → 0 < b.pinId)) ∧ (∀ s : StoreM4.RetainedBasisCursor.Sys, (StoreM4.RetainedBasisCursor.reconcileOnOpen s).pendingRetirePins = [] ∧ (∀ p ∈ (StoreM4.RetainedBasisCursor.reconcileOnOpen s).durablePins, p.active = true → p.pinId ∈ StoreM4.RetainedBasisCursor.boundPinIds (StoreM4.RetainedBasisCursor.reconcileOnOpen s).bases) ∧ ∀ b ∈ (StoreM4.RetainedBasisCursor.reconcileOnOpen s).bases, 0 < b.pinId ∧ b.prevPinId = none ∧ b.stagedConsolidate = false ∧ b.activeLoans = 0) ∧ (∀ (α : Type) (hash : List StoreM4.RetainedBasisCursor.Row → α) (chunks : List StoreM4.RetainedBasisCursor.LayeredChunk) (newLocator : StoreM4.RetainedBasisCursor.LayeredChunk → Nat), hash (StoreM4.RetainedBasisCursor.basisCanonicalRows (StoreM4.RetainedBasisCursor.consolidateBasis chunks newLocator)) = hash (StoreM4.RetainedBasisCursor.basisCanonicalRows chunks)) ∧ (∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token), (tok.verifyMac s.macKey = false ∨ tok.homeId ≠ s.homeId) → StoreM4.RetainedBasisCursor.resumeToken s tok = StoreM4.RetainedBasisCursor.ResumeOutcome.corruptStorage) ∧ (∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token) (b : StoreM4.RetainedBasisCursor.BasisEntry), StoreM4.RetainedBasisCursor.Inv s → b ∈ s.bases → tok.verifyMac s.macKey = true → tok.homeId = s.homeId → tok.incarnation ≤ s.incarnation → tok.schemaVer = s.supportedSchema → tok.queryDigest = s.expectedQuery → b.commitId = tok.commitId → b.branchOrigin = tok.branchOrigin → b.commitment = tok.commitment → b.retained = true → (∃ s', StoreM4.RetainedBasisCursor.resumeToken s tok = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted s' b.commitId (StoreM4.RetainedBasisCursor.canonicalSuffix b.rows tok.afterKey) ∧ ∀ b' ∈ (StoreM4.RetainedBasisCursor.reclaimBasis (StoreM4.RetainedBasisCursor.pruneBasis s' b.commitId) b.commitId).bases, b'.commitId = b.commitId → b'.reclaimed = false ∧ 0 < b'.activeLoans) ∧ StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.pruneBasis s b.commitId) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.historyUnavailable) ∧ (∀ (s : StoreM4.RetainedBasisCursor.Sys) (tok : StoreM4.RetainedBasisCursor.Token) (b : StoreM4.RetainedBasisCursor.BasisEntry), StoreM4.RetainedBasisCursor.Inv s → b ∈ s.bases → tok.verifyMac s.macKey = true → tok.homeId = s.homeId → tok.incarnation ≤ s.incarnation → tok.schemaVer = s.supportedSchema → tok.queryDigest = s.expectedQuery → b.commitId = tok.commitId → b.branchOrigin = tok.branchOrigin → b.commitment = tok.commitment → (b.retained = true → ∃ s', StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.reconcileOnOpen s) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted s' b.commitId (StoreM4.RetainedBasisCursor.canonicalSuffix b.rows tok.afterKey)) ∧ (b.retained = false → StoreM4.RetainedBasisCursor.resumeToken (StoreM4.RetainedBasisCursor.reconcileOnOpen s) tok = StoreM4.RetainedBasisCursor.ResumeOutcome.historyUnavailable)) ∧ (∀ (chunks : List (List StoreM4.RetainedBasisCursor.Row)) (pos : Option Nat), StoreM4.RetainedBasisCursor.StrictlySorted chunks.flatten → StoreM4.RetainedBasisCursor.resumeWithChunkIndex chunks pos = StoreM4.RetainedBasisCursor.canonicalSuffix chunks.flatten pos ∧ StoreM4.RetainedBasisCursor.canonicalPrefix chunks.flatten pos ++ StoreM4.RetainedBasisCursor.canonicalSuffix chunks.flatten pos = chunks.flatten)"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.M7_rebind_to_head_violates_immutability",
+      "type": "StoreM4.RetainedBasisCursor.resumeToken StoreM4.RetainedBasisCursor.m7PrunedSys StoreM4.RetainedBasisCursor.m7Token = StoreM4.RetainedBasisCursor.ResumeOutcome.historyUnavailable ∧ StoreM4.RetainedBasisCursor.resumeMutantRebindToHead StoreM4.RetainedBasisCursor.m7PrunedSys StoreM4.RetainedBasisCursor.m7Token = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted StoreM4.RetainedBasisCursor.m7PrunedSys 10 StoreM4.RetainedBasisCursor.m7HeadRows ∧ StoreM4.RetainedBasisCursor.m7HeadRows ≠ StoreM4.RetainedBasisCursor.m7OldRows"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.M7_locator_coupled_commitment_breaks_consolidation",
+      "type": "let c : StoreM4.RetainedBasisCursor.LayeredChunk := ⟨1, [[⟨1, 10, [1]⟩], [⟨2, 20, [2]⟩]]⟩; (c.consolidate 2).canonicalRows = c.canonicalRows ∧ StoreM4.RetainedBasisCursor.locatorCoupledCommitment (c.consolidate 2) ≠ StoreM4.RetainedBasisCursor.locatorCoupledCommitment c"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.M7_physical_offset_resume_breaks_after_index_discard",
+      "type": "let page1FromIndex := StoreM4.RetainedBasisCursor.m7PhysicalIndexRows.take 1; let page2ByOffsetAfterDiscard := StoreM4.RetainedBasisCursor.m7CanonicalRows.drop 1; page1FromIndex = [⟨2, 20, []⟩] ∧ page2ByOffsetAfterDiscard = [⟨2, 20, []⟩] ∧ page1FromIndex ++ page2ByOffsetAfterDiscard ≠ StoreM4.RetainedBasisCursor.m7CanonicalRows"
+    },
+    {
+      "name": "StoreM4.RetainedBasisCursor.M7_forged_mac_token_rejected_before_admission",
+      "type": "let forged := StoreM4.RetainedBasisCursor.issueToken 99 1 1 9 1 77 1 42 none; StoreM4.RetainedBasisCursor.resumeToken StoreM4.RetainedBasisCursor.m7ActiveSys forged = StoreM4.RetainedBasisCursor.ResumeOutcome.corruptStorage ∧ StoreM4.RetainedBasisCursor.resumeToken StoreM4.RetainedBasisCursor.m7ActiveSys StoreM4.RetainedBasisCursor.m7Token = StoreM4.RetainedBasisCursor.ResumeOutcome.admitted { StoreM4.RetainedBasisCursor.m7ActiveSys with bases := StoreM4.RetainedBasisCursor.m7ActiveSys.bases.map (StoreM4.RetainedBasisCursor.bumpLoan 1) } 1 StoreM4.RetainedBasisCursor.m7OldRows"
     }
   ]
 }

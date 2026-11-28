@@ -261,6 +261,13 @@ fn prepare_fresh_world<Schema: ApplicationSchemaComposition, Program: 'static>(
                 home,
             )
         }
+        HistoricalBranchReconciliation { query, home, cause } => world(
+            WorldQueryPreparation::HistoricalBranchReconciliation {
+                _query: query,
+                _cause: cause,
+            },
+            home,
+        ),
         _ => unreachable!("pre-world, transition, and existing variants are handled earlier"),
     }
 }

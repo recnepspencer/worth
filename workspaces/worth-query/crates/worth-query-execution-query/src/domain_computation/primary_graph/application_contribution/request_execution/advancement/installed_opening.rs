@@ -1,6 +1,7 @@
 //! Installed runtime owners lend one branded request for each public call.
 use super::{
-    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryForeignAdvancementPhase,
+    WorthQueryAdvancementDenial, WorthQueryAdvancementPhase, WorthQueryBootstrapAdvancementPhase,
+    WorthQueryForeignAdvancementPhase,
 };
 use crate::domain_computation::primary_graph::WorthQueryPrimaryGraphApplicationRuntime;
 use worth_query_admission::facade::authenticated_principal::WorthQueryRequestScope;
@@ -52,6 +53,36 @@ impl<Schema: ApplicationSchema> WorthQueryPrimaryGraphApplicationRuntime<Schema>
                 .product_runtime
                 .with_execution_request_advancement(execution, body)
         })
+    }
+
+    /// Runs one host call carrying the caller's exact original
+    /// [`worth_execution::ExecutionRequest`], narrowed by BOTH the installed
+    /// World placement and the session's policy and request scope.
+    pub fn with_scoped_execution_request_advancement<R>(
+        &self,
+        execution: worth_execution::ExecutionRequest<'_, '_>,
+        policy: worth_foundational::ExecutionRequestPolicy,
+        request: &WorthQueryRequestScope,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        worth_execution::run_with_execution_stack(move || {
+            self.runtime
+                .product_runtime
+                .with_scoped_execution_request_advancement(execution, policy, request, body)
+        })
+    }
+
+    /// Hands off an active bootstrap opening phase into a Home advancement
+    /// on this installed World while preserving the opening request's controls.
+    pub fn with_bootstrap_handed_off_advancement<R>(
+        &self,
+        bootstrap: &WorthQueryBootstrapAdvancementPhase<'_>,
+        retain_returned_outcome: bool,
+        body: impl for<'scope> FnOnce(WorthQueryAdvancementPhase<'scope>) -> R,
+    ) -> Result<R, WorthQueryAdvancementDenial> {
+        self.runtime
+            .product_runtime
+            .with_bootstrap_handed_off_advancement(bootstrap, retain_returned_outcome, body)
     }
 
     /// [`Self::with_application_advancement`] funded as `allocation_policy`

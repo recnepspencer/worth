@@ -337,17 +337,17 @@ where
             Some(calendar) => super::capability_calendar::with_calendar(Some(source), calendar),
             None => source,
         });
-        with_bootstrap_advancement(config.execution_policy, |phase| {
+        let home = with_bootstrap_advancement(config.execution_policy, |phase| {
             request.open_in_advancement(&phase)
         })
         .map_err(Denial::Advancement)?
-        .map_err(Denial::Home)
+        .map_err(Denial::Home)?;
+        Ok(home)
     }
 }
 
 impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Schema, Program> {
-    /// Cleanly retires this Directory Home under [`DEFAULT_HOST_EXECUTION_POLICY`]
-    /// and reclaims its inert retired Query resources.
+    /// Cleanly retires this Directory Home under [`DEFAULT_HOST_EXECUTION_POLICY`].
     pub fn close_clean(
         self,
     ) -> Result<
@@ -360,8 +360,7 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
         self.close_clean_with_policy(DEFAULT_HOST_EXECUTION_POLICY)
     }
 
-    /// Cleanly retires this Directory Home under an explicit execution policy
-    /// and reclaims its inert retired Query resources.
+    /// Cleanly retires this Directory Home under an explicit execution policy.
     pub fn close_clean_with_policy(
         self,
         policy: ExecutionRequestPolicy,
@@ -372,10 +371,9 @@ impl<Schema: ApplicationSchema, Program: 'static> WorthQueryApplicationHome<Sche
             WorthQueryApplicationHomeCloseRefused<Schema, Program>,
         >,
     > {
-        let closed = self.close_with_policy(policy)?;
-        let (outcome, retired_query) = closed.into_parts();
-        if let Some(retired_query) = retired_query {
-            retired_query.reclaim();
+        let (outcome, retired_query) = self.close_with_policy(policy)?.into_parts();
+        if let Some(retired) = retired_query {
+            retired.reclaim();
         }
         Ok(outcome)
     }

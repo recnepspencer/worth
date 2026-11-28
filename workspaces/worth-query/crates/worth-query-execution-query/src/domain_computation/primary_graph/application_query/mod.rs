@@ -93,8 +93,9 @@ pub use read_execution::{
 pub mod readiness;
 pub mod root_window;
 pub use root_window::{
+    compute_admitted_request_binding_digest, compute_resume_anchor_proof,
     WorthQueryApplicationRootWindow, WorthQueryApplicationRootWindowBoundary,
-    WorthQueryApplicationRootWindowProgress,
+    WorthQueryApplicationRootWindowPage, WorthQueryApplicationRootWindowProgress,
 };
 pub mod resource_lifecycle;
 pub mod runtime_support;
@@ -163,10 +164,10 @@ pub use one_shot::{
     WorthQueryApplicationOneShotResult,
 };
 pub use projection::{
-    WorthQueryApplicationDisclosed, WorthQueryApplicationOmission, WorthQueryApplicationProjection,
-    WorthQueryApplicationProjectionDenial, WorthQueryApplicationProjectionDenialKind,
-    WorthQueryApplicationProjectionRow, WorthQueryApplicationProjectionRows,
-    WorthQueryPrerequisiteSelection,
+    KnownProjectedHeapBytes, WorthQueryApplicationDisclosed, WorthQueryApplicationOmission,
+    WorthQueryApplicationProjection, WorthQueryApplicationProjectionDenial,
+    WorthQueryApplicationProjectionDenialKind, WorthQueryApplicationProjectionRow,
+    WorthQueryApplicationProjectionRows, WorthQueryPrerequisiteSelection,
 };
 pub use readiness::WorthQueryPrimaryGraphApplicationReadinessSnapshot;
 pub use resource_lifecycle::{

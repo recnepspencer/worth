@@ -11,3 +11,7 @@ name = "StoreM4"
 [[lean_exe]]
 name = "store_m4_core_conformance"
 root = "StoreM4CoreConformance"
+
+[[lean_exe]]
+name = "retained_basis_conformance"
+root = "RetainedBasisConformance"

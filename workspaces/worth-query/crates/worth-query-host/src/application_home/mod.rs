@@ -7,6 +7,7 @@ mod desktop_open;
 mod discard;
 mod dispatch_journal;
 mod failure_close;
+mod historical_cursor;
 mod maintenance;
 mod opening;
 pub(crate) mod owned_holds;
@@ -30,6 +31,12 @@ pub use desktop_open::{
 pub use discard::{discard_home, WorthQueryApplicationHomeDiscardDenial};
 pub use failure_close::{
     WorthQueryApplicationHomeOpeningCloseRefused, WorthQueryApplicationHomeOpeningClosed,
+};
+pub use historical_cursor::{
+    AdmittedQueryWindowBinding, AdmittedQueryWindowPage, AdmittedQueryWindowSource,
+    BorrowedHistoricalRow, DurableHistoricalBasisStore, HistoricalCursor, HistoricalCursorPage,
+    HistoricalCursorStream, MemoryHistoricalBasisStore, ReaderLoan, ReaderLoanGuard,
+    RetainedBasisToken, RetainedRevisionReceipt,
 };
 pub use preview::{
     WorthQueryPreviewAdoptDenial, WorthQueryPreviewAdoptFailure, WorthQueryPreviewDiscardDenial,

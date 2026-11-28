@@ -112,6 +112,10 @@ pub fn read_continuation_page<
             next_boundary: progress.next_boundary,
             has_more: progress.has_more,
             actual_work,
+            window_progress: None,
+            row_projected_bytes: Vec::new(),
+            root_window_request: None,
+            window_boundaries: Vec::new(),
         },
         persistent_names: None,
     })

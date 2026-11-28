@@ -1,6 +1,7 @@
 mod admission;
 mod discard;
 mod failed_close;
+mod historical_cursors;
 mod host_oracle;
 mod interrupted_close;
 mod native_components;

@@ -157,6 +157,11 @@ impl VolatileRootPinTable {
     pub fn protects_root(&self, root: u64) -> bool {
         self.lock().protects_root(root)
     }
+
+    /// Pin identities that currently protect a root (`Active` or `Expiring`).
+    pub fn live_pin_ids(&self) -> Vec<RootPinId> {
+        self.lock().live_pin_ids()
+    }
 }
 
 /// Complete `pin` and then each ancestor while it is `Expiring` and drained.

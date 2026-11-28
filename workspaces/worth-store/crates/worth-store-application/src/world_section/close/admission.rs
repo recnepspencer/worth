@@ -16,6 +16,16 @@ where
     ) -> Result<(), crate::ApplicationHomeCloseDenial> {
         use crate::ApplicationHomeCloseDenial as Denial;
         use worth_runtime_world::facade::{RuntimeWorldCloseDenial, RuntimeWorldServiceDenial};
+        if let Some(store) = self
+            .home
+            .context
+            .historical_bases
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .as_ref()
+        {
+            store.clear_cached_memberships();
+        }
         // Funding and source validation finish before the actual final gates.
         if let Some(composition) = &self.composition {
             composition.preflight_home_retirement(request, self.home.relational().runtime())?;

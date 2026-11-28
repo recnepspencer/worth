@@ -105,6 +105,16 @@ impl<Query, QueryResult> WorthQueryPublishedApplicationResult<Query, QueryResult
         self.source.into_rows()
     }
 
+    pub fn into_root_window_page(
+        self,
+    ) -> Option<
+        worth_query_execution::facade::primary_graph::WorthQueryApplicationRootWindowPage<
+            QueryResult,
+        >,
+    > {
+        self.source.into_root_window_page()
+    }
+
     pub(crate) fn into_output_demand_source(
         self,
     ) -> WorthQueryApplicationOutputDemandSource<Query, QueryResult> {

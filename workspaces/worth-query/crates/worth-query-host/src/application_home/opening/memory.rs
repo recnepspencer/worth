@@ -51,6 +51,9 @@ where
                 active_head,
                 owned: std::sync::Arc::default(),
                 commit_watch: std::sync::Arc::default(),
+                durable_historical_bases: std::sync::OnceLock::new(),
+                memory_historical_bases: std::sync::OnceLock::new(),
+                retained_branch_custody: std::sync::Mutex::default(),
             }
         })
         .map_err(|cause| Refused::from_phase(Phase::Preparation(cause)))

@@ -23,6 +23,7 @@ pub struct WorthQueryProductBranchFork<'runtime> {
     runtime: &'runtime WorthQueryProductRuntime,
     source: ForkSource,
     intent: Option<WorthQueryProductBranchForkIntent>,
+    reserved_ordinal: Option<u64>,
     output_lineage: Option<std::sync::Arc<dyn crate::ports::ForkLineagePort>>,
     commit_coordination: Option<&'runtime dyn crate::ports::BranchCommitCoordinationPort>,
     source_program_resolver: Option<&'runtime dyn WorthQuerySourceProgramResolver>,
@@ -51,11 +52,24 @@ pub enum WorthQueryProductBranchCreateError {
 }
 
 impl<'runtime> WorthQueryProductBranches<'runtime> {
+    /// Atomically reserves the next unique branch ordinal and returns its
+    /// deterministic product branch name before branch publication begins.
+    pub fn reserve_planned_branch_ordinal(
+        &self,
+    ) -> Result<(u64, String), WorthQueryProductBranchCreationDenial> {
+        let ordinal = self
+            .runtime
+            .reserve_public_branch_ordinal()
+            .map_err(WorthQueryProductBranchCreationDenial::World)?;
+        Ok((ordinal, format!("query-product-{ordinal}")))
+    }
+
     pub fn fork(self, source: WorthQueryProductBranch) -> WorthQueryProductBranchFork<'runtime> {
         WorthQueryProductBranchFork {
             runtime: self.runtime,
             source: ForkSource::Current(source),
             intent: None,
+            reserved_ordinal: None,
             output_lineage: None,
             commit_coordination: None,
             source_program_resolver: None,
@@ -95,6 +109,11 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
         self
     }
 
+    pub const fn with_reserved_ordinal(mut self, ordinal: u64) -> Self {
+        self.reserved_ordinal = Some(ordinal);
+        self
+    }
+
     pub fn create(
         self,
         phase: &crate::domain_computation::primary_graph::WorthQueryAdvancementPhase<'_>,
@@ -122,6 +141,7 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
             runtime,
             source,
             intent,
+            reserved_ordinal,
             output_lineage,
             commit_coordination,
             source_program_resolver,
@@ -136,10 +156,13 @@ impl<'runtime> WorthQueryProductBranchFork<'runtime> {
                 .components();
             let relational = component_plan(components.relational())?;
             let signal = component_plan(components.signal())?;
-            let ordinal = runtime
-                .reserve_public_branch_ordinal()
-                .map_err(WorthQueryProductBranchCreationDenial::World)
-                .map_err(WorthQueryProductBranchCreateError::Creation)?;
+            let ordinal = match reserved_ordinal {
+                Some(ordinal) => ordinal,
+                None => runtime
+                    .reserve_public_branch_ordinal()
+                    .map_err(WorthQueryProductBranchCreationDenial::World)
+                    .map_err(WorthQueryProductBranchCreateError::Creation)?,
+            };
             // ordinal is u64: this fixed ASCII prefix, at most 20 decimal digits,
             // and the fixed component suffixes fit both native name grammars/bounds.
             let product_name = format!("query-product-{ordinal}");

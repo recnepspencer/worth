@@ -154,6 +154,13 @@ where
         } else {
             plan
         };
+        let plan = match self.root_window {
+            Some(_) if !pages_by_root_window(binding.query().read_graph()) => {
+                return Err(WorthQueryApplicationRequestQueryDenial::RequestMode);
+            }
+            Some(window) => plan.with_root_window(window),
+            None => plan,
+        };
         perform(self.application, &binding, self.principal, plan)
     }
 }

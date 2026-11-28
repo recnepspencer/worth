@@ -733,6 +733,31 @@ forbidden_identifiers = ["publication_boundary"]
 forbidden_identifier_fragments = []
 guidance = "Milestone 9.17.6 slice 5.7: only worth-query-publication drives execution's workflow owner vocabulary; the certification commit-boundary court alone forges a kernel commit below that owner"
 
+[[source_identifier_denials]]
+root = "workspaces/worth-query/crates"
+exclude_paths = []
+forbidden_identifiers = [
+  "store_cursor_boundary",
+  "from_persisted_home_key",
+  "HomeWindowBoundarySealingAuthority",
+]
+forbidden_identifier_fragments = []
+guidance = "Store M4.4: window boundaries stay opaque in memory; only worth-store-application's crate-private HistoricalCursorAuthority seals fixed cursor positions under the Home secret key"
+
+[[source_identifier_denials]]
+root = "workspaces/worth-store/crates"
+exclude_paths = [
+  "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/historical_cursors/boundary_sealing_fence.rs",
+  "workspaces/worth-store/crates/worth-store-court-application/tests/worth_store_court_application/process/application/historical_cursors/m7_mutants_and_compile_fail.rs",
+]
+forbidden_identifiers = [
+  "store_cursor_boundary",
+  "from_persisted_home_key",
+  "HomeWindowBoundarySealingAuthority",
+]
+forbidden_identifier_fragments = []
+guidance = "Store M4.4: only worth-store-application's crate-private HistoricalCursorAuthority seals fixed cursor positions under the Home secret key"
+
 [[rule_contracts.query_audience.facade_surfaces]]
 label = "worth-query-host::application_entry"
 source = "workspaces/worth-query/crates/worth-query-host/src/facade.rs"
