@@ -1,5 +1,0 @@
-error[E0599]: no associated function or constant named `mint_for_test` found for struct `WorthQueryRecoveryEffectAuthority` in the current scope
- --> tests/ui/recovery_authority/effect_authority_mint.rs:8:48
-  |
-8 |     let _ = WorthQueryRecoveryEffectAuthority::mint_for_test(fixture(), fixture(), fixture());
-  |                                                ^^^^^^^^^^^^^ associated function or constant not found in `WorthQueryRecoveryEffectAuthority`

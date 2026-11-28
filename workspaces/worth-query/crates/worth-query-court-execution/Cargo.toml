@@ -8,8 +8,6 @@ license.workspace = true
 publish = false
 
 [dev-dependencies]
-trybuild = "1.0"
-worth-query-execution-runtime.workspace = true
 stats_alloc = "0.1"
 worth-testkit-compiler = { path = "../../../../crates/worth-testkit-compiler" }
 im = "=15.1.0"
